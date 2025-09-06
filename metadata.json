@@ -1,0 +1,6 @@
+{
+  "name": "AI Magic Tool Studio Full API test 11",
+  "description": "A powerful single-page application for creative image generation using AI. Features Pose Studio for character posing and Prop Fusion for integrating objects into images, powered by the Gemini API.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}

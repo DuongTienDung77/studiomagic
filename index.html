@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Magic Tool Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+    <link rel="stylesheet" href="./assets/style.css" />
+    <!--
+      Note for deploying Single-Page Applications (SPAs) to Netlify/Vercel:
+
+      To ensure client-side routing works correctly on refresh, a rewrite rule is needed.
+      For Netlify, a `_redirects` file in the root with the following content is required:
+      /*    /index.html    200
+    -->
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'dark-bg': '#0D0D0D',
+              'dark-surface': '#1C1C1E',
+              'dark-primary': '#BF5AF2',
+              'dark-secondary': '#03dac6',
+              'dark-text': '#F2F2F7',
+              'dark-border': '#2C2C2E',
+              'light-bg': '#f5f5f5',
+              'light-surface': '#ffffff',
+              'light-primary': '#5856D6',
+              'light-secondary': '#03dac6',
+              'light-text': '#121212',
+              'light-border': '#e0e0e0',
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.5s ease-in-out',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: 0 },
+                '100%': { opacity: 1 },
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.17.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./assets/main.js"></script>
+  </body>
+</html>
