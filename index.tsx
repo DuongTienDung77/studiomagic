@@ -17,7 +17,7 @@ import {createRoot} from 'react-dom/client';
 import {GoogleGenAI, Modality} from '@google/genai';
 
 // --- CONSTANTS & TYPES ---
-type Page = 'home' | 'pose' | 'prop' | 'design' | 'creative' | 'stylist' | 'architect' | 'video' | 'magic' | 'background' | 'trendko' | 'batch';
+type Page = 'home' | 'pose' | 'prop' | 'design' | 'creative' | 'stylist' | 'architect' | 'video' | 'magic' | 'background' | 'trendko' | 'batch' | 'lookbook' | 'placement';
 type Theme = 'light' | 'dark';
 type Language = 'en' | 'vi';
 type ControlMode = 'Pose' | 'Edge' | 'Depth' | 'Creative';
@@ -373,6 +373,14 @@ const TRENDS: Record<string, { label: {[key in Language]: string}; prompt: strin
     'cyborg': {
         label: { en: 'Cyborg', vi: 'Người máy' },
         prompt: 'Transform the subject into a futuristic cyborg. Seamlessly blend their human features with intricate robotic parts, glowing wires, and metallic textures. The style should be inspired by cyberpunk art, with dramatic lighting, a dark and moody atmosphere, and a high level of detail in the mechanical components.'
+    },
+    'wedding-photo': {
+        label: { en: 'Wedding Photo', vi: 'Ảnh cưới' },
+        prompt: 'Recreate the subjects in a beautiful, romantic wedding photo. They should be dressed in elegant wedding attire (a stunning white gown for the bride, a sharp suit for the groom). The setting should be a picturesque location, like a beach at sunset, a lush garden, or a classic chapel. The mood is romantic, elegant, and timeless. The style should be professional wedding photography.'
+    },
+    'travel-adventure': {
+        label: { en: 'Travel Adventure', vi: 'Du lịch Khám phá' },
+        prompt: 'Place the subjects on an epic travel adventure. They could be standing on a mountain peak with a breathtaking view, exploring an ancient ruin, or relaxing on a tropical beach. The image should look like a stunning travel influencer photo, with vibrant colors, beautiful lighting, and a sense of wonder and exploration. The mood is adventurous, happy, and awe-inspiring.'
     }
 };
 
@@ -457,11 +465,16 @@ const TRANSLATIONS = {
     trendkoDesc: 'Create viral-style images with a single click.',
     batchStudioTitle: 'Whisk Auto Studio',
     batchStudioDesc: 'Batch generate images from a set of assets and prompts.',
+    lookbookStudioTitle: 'Lookbook Studio',
+    lookbookStudioDesc: 'Create professional lookbook pages from your photos.',
+    productPlacementTitle: 'AI Product Placement',
+    productPlacementDesc: 'Place your product into any scene realistically.',
     // Tool Page
     uploadCharacter: 'Upload Character',
     uploadPose: 'Upload Pose Sketch',
     uploadProp: 'Upload Prop',
     uploadSubject: 'Upload Subject',
+    uploadSecondSubject: 'Upload Second Subject (Optional)',
     uploadBackground: 'Upload Background',
     uploadModel: 'Upload Model',
     uploadOutfit: 'Upload Outfit',
@@ -469,6 +482,9 @@ const TRANSLATIONS = {
     uploadImage: 'Upload Image',
     uploadSourceImage: 'Upload Source Image',
     uploadContext: 'Upload Context / Background',
+    uploadMultipleImages: 'Upload Images (2+ recommended)',
+    uploadScene: 'Upload Scene',
+    uploadProduct: 'Upload Product',
     imagePrompt: 'Image Prompt',
     imagePromptPlaceholder: 'Describe the image you want to create in detail...',
     videoPrompt: 'Video Prompt',
@@ -490,6 +506,18 @@ const TRANSLATIONS = {
     generateTrends: 'Generate Trends',
     generatingTrends: 'Generating Trends...',
     noTrendsSelected: 'Please select at least one trend to generate.',
+    // Lookbook
+    generateLookbook: 'Generate Lookbook',
+    generatingLookbook: 'Generating Lookbook...',
+    pageOrientation: 'Page Orientation',
+    numberOfPages: 'Number of Pages',
+    lookbookWedding: 'Wedding',
+    lookbookYearbook: 'Yearbook',
+    lookbookTravel: 'Travel',
+    lookbookTimeline: 'Timeline',
+    lookbookContent: 'Page Content (one line per page)',
+    lookbookContentPlaceholder: 'E.g., Title 1 // Body content for page 1...\nTitle 2 // Body content for page 2...',
+    errorNotEnoughImages: 'Please upload at least 2 images to create a lookbook.',
     // Default Prompts
     stylistPositiveDefault: 'hyper-realistic, detailed, 8k',
     stylistNegativeDefault: 'blurry, distorted, malformed, deformed',
@@ -501,6 +529,8 @@ const TRANSLATIONS = {
     creativeNegativeDefault: 'ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, blurry, bad anatomy, blurred, watermark, grainy, signature, cut off, draft',
     architectPositiveDefault: 'photorealistic render, octane render, unreal engine 5, 8k, detailed materials, cinematic lighting',
     architectNegativeDefault: 'cartoon, sketch, drawing, watermark, signature, ugly',
+    productPlacementPositiveDefault: 'hyper-realistic, detailed, 8k, seamless integration, perfect lighting and shadows',
+    productPlacementNegativeDefault: 'blurry, distorted, floating, discolored, malformed, deformed, unrealistic, cartoonish',
     dragOrClick: 'Drag & drop or click to upload',
     preview: 'Preview',
     result: 'Result',
@@ -550,6 +580,9 @@ const TRANSLATIONS = {
     backgroundFeatures: ['One-click background removal.', 'Outputs high-resolution PNG with transparency.', 'Perfect for product photos, portraits, and more.'],
     backgroundGuide: ['1. Upload the image you want to edit.', '2. Click "Generate"!', '3. Download your image with a transparent background.'],
     backgroundTips: ['Use images with a clear subject for the best results.', 'The output is a PNG, perfect for placing on new backgrounds.', 'High-resolution input images will produce high-resolution outputs.'],
+    placementFeatures: ['Place any product into any scene with stunning realism.', 'AI automatically adjusts for perspective, lighting, and shadows.', 'Ideal for creating professional product mockups and ads.'],
+    placementGuide: ['1. Upload your background scene image.', '2. Upload your product image (transparent BG is best).', '3. Select a "Product" or "Commercial" preset.', '4. Use prompts to guide placement, e.g., "place the bottle on the wooden table".', '5. Click "Generate"!'],
+    placementTips: ['Use high-quality scene and product images.', 'A product with a transparent background (PNG) gives the best results.', 'Be specific in your positive prompt about where and how the product should be placed.'],
     // Video Tool
     generateVideo: 'Generate Video',
     generatingVideo: 'Generating Video...',
@@ -563,8 +596,8 @@ const TRANSLATIONS = {
     videoTakesTime: 'This may take several minutes.',
     videoAspectRatio: 'Aspect Ratio',
     videoQuality: 'Quality',
-    portrait: '9:16 (Portrait)',
-    landscape: '16:9 (Landscape)',
+    portrait: 'Portrait',
+    landscape: 'Landscape',
     hd720: '720p (HD)',
     hd1080: '1080p (Full HD)',
     videoPromptRequired: 'Please enter a video prompt.',
@@ -633,11 +666,16 @@ const TRANSLATIONS = {
     trendkoDesc: 'Tạo ảnh theo phong cách viral chỉ bằng một cú nhấp chuột.',
     batchStudioTitle: 'Whisk Auto Studio',
     batchStudioDesc: 'Tạo ảnh hàng loạt từ một bộ tài sản và prompts.',
+    lookbookStudioTitle: 'Xưởng Lookbook',
+    lookbookStudioDesc: 'Tạo các trang lookbook chuyên nghiệp từ ảnh của bạn.',
+    productPlacementTitle: 'Thương mại AI',
+    productPlacementDesc: 'Đặt sản phẩm của bạn vào bất kỳ bối cảnh nào một cách chân thực.',
     // Tool Page
     uploadCharacter: 'Tải lên Nhân vật',
     uploadPose: 'Tải lên Phác thảo Tư thế',
     uploadProp: 'Tải lên Đạo cụ',
     uploadSubject: 'Tải lên Chủ thể',
+    uploadSecondSubject: 'Tải lên Chủ thể thứ hai (Tùy chọn)',
     uploadBackground: 'Tải lên Nền',
     uploadModel: 'Tải lên Người mẫu',
     uploadOutfit: 'Tải lên Trang phục',
@@ -645,6 +683,9 @@ const TRANSLATIONS = {
     uploadImage: 'Tải lên Hình ảnh',
     uploadSourceImage: 'Tải lên Ảnh Gốc',
     uploadContext: 'Tải lên Bối cảnh / Nền',
+    uploadMultipleImages: 'Tải lên nhiều ảnh (khuyên dùng 2+)',
+    uploadScene: 'Tải lên Bối cảnh',
+    uploadProduct: 'Tải lên Sản phẩm',
     imagePrompt: 'Prompt Ảnh',
     imagePromptPlaceholder: 'Mô tả chi tiết hình ảnh bạn muốn tạo...',
     videoPrompt: 'Mô tả Video',
@@ -666,6 +707,18 @@ const TRANSLATIONS = {
     generateTrends: 'Tạo ảnh Trends',
     generatingTrends: 'Đang tạo Trends...',
     noTrendsSelected: 'Vui lòng chọn ít nhất một trend để tạo ảnh.',
+    // Lookbook
+    generateLookbook: 'Tạo Lookbook',
+    generatingLookbook: 'Đang tạo Lookbook...',
+    pageOrientation: 'Bố cục Trang',
+    numberOfPages: 'Số trang',
+    lookbookWedding: 'Ảnh cưới',
+    lookbookYearbook: 'Kỷ yếu',
+    lookbookTravel: 'Du lịch',
+    lookbookTimeline: 'Timeline',
+    lookbookContent: 'Nội dung Trang (mỗi dòng một trang)',
+    lookbookContentPlaceholder: 'VD: Tiêu đề 1 // Nội dung cho trang 1...\nTiêu đề 2 // Nội dung cho trang 2...',
+    errorNotEnoughImages: 'Vui lòng tải lên ít nhất 2 ảnh để tạo lookbook.',
     // Default Prompts
     stylistPositiveDefault: 'siêu thực, chi tiết, 8k',
     stylistNegativeDefault: 'mờ, méo mó, dị dạng, biến dạng',
@@ -677,6 +730,8 @@ const TRANSLATIONS = {
     creativeNegativeDefault: 'xấu, lặp lại, tay vẽ xấu, chân vẽ xấu, mặt vẽ xấu, ngoài khung hình, thừa chi, dị dạng, biến dạng, cơ thể ngoài khung hình, mờ, giải phẫu sai, nhoè, watermark, nhiễu hạt, chữ ký, cắt cảnh, bản nháp',
     architectPositiveDefault: 'render ảnh thực, render octane, unreal engine 5, 8k, vật liệu chi tiết, ánh sáng điện ảnh',
     architectNegativeDefault: 'hoạt hình, phác thảo, bản vẽ, watermark, chữ ký, xấu',
+    productPlacementPositiveDefault: 'siêu thực, chi tiết, 8k, tích hợp liền mạch, ánh sáng và bóng đổ hoàn hảo',
+    productPlacementNegativeDefault: 'mờ, méo mó, lơ lửng, bạc màu, dị dạng, biến dạng, không thực tế, hoạt hình',
     dragOrClick: 'Kéo & thả hoặc nhấp để tải lên',
     preview: 'Xem trước',
     result: 'Kết quả',
@@ -726,6 +781,9 @@ const TRANSLATIONS = {
     backgroundFeatures: ['Xóa nền chỉ bằng một cú nhấp chuột.', 'Xuất ra file PNG độ phân giải cao với nền trong suốt.', 'Hoàn hảo cho ảnh sản phẩm, chân dung, và nhiều hơn nữa.'],
     backgroundGuide: ['1. Tải lên hình ảnh bạn muốn chỉnh sửa.', '2. Nhấp vào "Tạo ảnh"!', '3. Tải xuống hình ảnh của bạn với nền trong suốt.'],
     backgroundTips: ['Sử dụng hình ảnh có chủ thể rõ ràng để có kết quả tốt nhất.', 'Đầu ra là file PNG, hoàn hảo để đặt trên nền mới.', 'Ảnh đầu vào có độ phân giải cao sẽ tạo ra ảnh đầu ra có độ phân giải cao.'],
+    placementFeatures: ['Đặt bất kỳ sản phẩm nào vào mọi bối cảnh với độ chân thực tuyệt vời.', 'AI tự động điều chỉnh phối cảnh, ánh sáng và bóng đổ.', 'Lý tưởng để tạo mockup sản phẩm và quảng cáo chuyên nghiệp.'],
+    placementGuide: ['1. Tải lên ảnh bối cảnh của bạn.', '2. Tải lên ảnh sản phẩm của bạn (nền trong suốt là tốt nhất).', '3. Chọn một preset "Sản phẩm" hoặc "Thương mại".', '4. Sử dụng prompt để hướng dẫn vị trí, ví dụ: "đặt chai nước lên bàn gỗ".', '5. Nhấn "Tạo ảnh"!'],
+    placementTips: ['Sử dụng ảnh bối cảnh và sản phẩm chất lượng cao.', 'Sản phẩm có nền trong suốt (PNG) cho kết quả tốt nhất.', 'Hãy cụ thể trong prompt tích cực về vị trí và cách đặt sản phẩm.'],
     // Video Tool
     generateVideo: 'Tạo Video',
     generatingVideo: 'Đang tạo Video...',
@@ -739,8 +797,8 @@ const TRANSLATIONS = {
     videoTakesTime: 'Quá trình này có thể mất vài phút.',
     videoAspectRatio: 'Tỷ lệ Khung hình',
     videoQuality: 'Chất lượng',
-    portrait: '9:16 (Dọc)',
-    landscape: '16:9 (Ngang)',
+    portrait: 'Dọc',
+    landscape: 'Ngang',
     hd720: '720p (HD)',
     hd1080: '1080p (Full HD)',
     videoPromptRequired: 'Vui lòng nhập mô tả cho video.',
@@ -1148,6 +1206,101 @@ const ImageUploader = ({ onImageUpload, label }: {onImageUpload: (image: Uploade
   );
 };
 
+const MultiImageUploader = ({ onImagesUpload, label }: { onImagesUpload: (images: UploadedImage[]) => void, label: string }) => {
+    const [images, setImages] = useState<UploadedImage[]>([]);
+    const { t } = useAppContext();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFilesChange = (files: FileList | null) => {
+        if (!files) return;
+        const newImages: UploadedImage[] = [];
+        const fileArray = Array.from(files);
+
+        let filesToProcess = fileArray.length;
+        if (filesToProcess === 0) {
+            onImagesUpload([...images, ...newImages]);
+            return;
+        }
+
+        fileArray.forEach(file => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    if (typeof reader.result === 'string') {
+                        const base64String = reader.result.split(',')[1];
+                        newImages.push({
+                            apiPayload: { inlineData: { data: base64String, mimeType: file.type } },
+                            dataUrl: reader.result,
+                        });
+                    }
+                    filesToProcess--;
+                    if (filesToProcess === 0) {
+                        onImagesUpload([...images, ...newImages]);
+                        setImages(prev => [...prev, ...newImages]);
+                    }
+                };
+                reader.readAsDataURL(file);
+            } else {
+                filesToProcess--;
+                 if (filesToProcess === 0) {
+                    onImagesUpload([...images, ...newImages]);
+                    setImages(prev => [...prev, ...newImages]);
+                }
+            }
+        });
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer.files) {
+            handleFilesChange(e.dataTransfer.files);
+        }
+    };
+    
+    const removeImage = (index: number) => {
+        const updatedImages = images.filter((_, i) => i !== index);
+        setImages(updatedImages);
+        onImagesUpload(updatedImages);
+    };
+
+    const handleClick = () => fileInputRef.current?.click();
+
+    return (
+        <div>
+            <label className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{label}</label>
+            <div
+                className="w-full border-2 border-dashed border-light-border dark:border-dark-border rounded-lg p-4 hover:bg-light-bg dark:hover:bg-dark-bg transition-colors"
+                onDrop={handleDrop}
+                onDragOver={(e) => e.preventDefault()}
+            >
+                {images.length > 0 && (
+                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 mb-4">
+                        {images.map((image, index) => (
+                             <div key={index} className="relative group">
+                                <img src={image.dataUrl} alt={`upload-${index}`} className="w-full h-20 object-cover rounded-md" />
+                                <button onClick={() => removeImage(index)} className="absolute top-0 right-0 bg-red-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                <div className="text-center cursor-pointer" onClick={handleClick}>
+                    <i className="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">{t('dragOrClick')}</p>
+                </div>
+            </div>
+            <input
+                type="file"
+                ref={fileInputRef}
+                multiple
+                onChange={(e) => handleFilesChange(e.target.files)}
+                className="hidden"
+                accept="image/*"
+            />
+        </div>
+    );
+};
+
 const ImageComparator = ({ beforeSrc, afterSrc }: { beforeSrc: string, afterSrc: string }) => {
     const [sliderPosition, setSliderPosition] = useState(50);
     const [isDragging, setIsDragging] = useState(false);
@@ -1186,8 +1339,8 @@ const ImageComparator = ({ beforeSrc, afterSrc }: { beforeSrc: string, afterSrc:
         return () => {
             window.removeEventListener('mousemove', handleDrag);
             window.removeEventListener('touchmove', handleDrag);
-            window.removeEventListener('mouseup', handleEnd);
-            window.removeEventListener('touchend', handleEnd);
+            window.addEventListener('mouseup', handleEnd);
+            window.addEventListener('touchend', handleEnd);
         };
     }, [handleDrag, handleEnd]);
 
@@ -1305,10 +1458,12 @@ const ToggleSwitch = ({ id, checked, onChange, disabled, label, description }: T
 const HomePage = ({ onNavigate }: {onNavigate: (page: Page) => void}) => {
   const { t } = useAppContext();
   const tools = [
+    { page: 'lookbook', icon: 'fa-book', title: t('lookbookStudioTitle'), desc: t('lookbookStudioDesc') },
     { page: 'batch', icon: 'fa-layer-group', title: t('batchStudioTitle'), desc: t('batchStudioDesc') },
     { page: 'trendko', icon: 'fa-fire', title: t('trendkoTitle'), desc: t('trendkoDesc') },
     { page: 'pose', icon: 'fa-street-view', title: t('poseStudioTitle'), desc: t('poseStudioDesc') },
     { page: 'prop', icon: 'fa-magic', title: t('propFusionTitle'), desc: t('propFusionDesc') },
+    { page: 'placement', icon: 'fa-bullhorn', title: t('productPlacementTitle'), desc: t('productPlacementDesc') },
     { page: 'design', icon: 'fa-palette', title: t('designStudioTitle'), desc: t('designStudioDesc') },
     { page: 'creative', icon: 'fa-lightbulb', title: t('creativeStudioTitle'), desc: t('creativeStudioDesc') },
     { page: 'stylist', icon: 'fa-tshirt', title: t('stylistStudioTitle'), desc: t('stylistStudioDesc') },
@@ -1343,8 +1498,10 @@ const AITrendMaker = ({ onBack }: { onBack: () => void }) => {
     const { t, language } = useAppContext();
     const { ai } = useApi();
     const [sourceImage, setSourceImage] = useState<UploadedImage | null>(null);
+    const [secondarySourceImage, setSecondarySourceImage] = useState<UploadedImage | null>(null);
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
+    const [negativePrompt, setNegativePrompt] = useState('');
     const [aspectRatio, setAspectRatio] = useState<'9:16' | '1:1' | '16:9'>('9:16');
     const [selectedTrends, setSelectedTrends] = useState<string[]>([]);
     const [results, setResults] = useState<{ trendKey: string; imageUrl: string; }[]>([]);
@@ -1368,7 +1525,7 @@ const AITrendMaker = ({ onBack }: { onBack: () => void }) => {
             return;
         }
         if (!sourceImage) {
-            setError(language === 'vi' ? 'Vui lòng tải lên Ảnh Gốc.' : 'Please upload the Source Image.');
+            setError(language === 'vi' ? 'Vui lòng tải lên Chủ thể chính.' : 'Please upload the Main Subject.');
             return;
         }
         if (selectedTrends.length === 0) {
@@ -1383,17 +1540,48 @@ const AITrendMaker = ({ onBack }: { onBack: () => void }) => {
         try {
             const generationPromises = selectedTrends.map(async (trendKey) => {
                 const trend = TRENDS[trendKey];
+                
+                let subjectInstruction;
+                const parts: any[] = [sourceImage.apiPayload];
+
+                if (secondarySourceImage) {
+                    subjectInstruction = "[SUBJECTS] The main subject is from the first image. The second subject is from the second image. Combine them naturally into the scene as a couple or partners in the trend.";
+                    parts.push(secondarySourceImage.apiPayload);
+                } else {
+                    subjectInstruction = "[SUBJECT] The subject is the person in the provided image.";
+                }
+
                 const finalPrompt = `
                     [TASK] Create a viral trend image.
+
+                    [IDENTITY PRESERVATION]
+                    **CRITICAL INSTRUCTION: ABSOLUTE LIKENESS REQUIRED**
+                    You MUST strictly preserve the facial features, structure, and identity of the subject(s) from the input image(s). The person in the output MUST be perfectly and instantly recognizable as the same person from the input.
+
+                    **RULES:**
+                    1.  **Direct Likeness:** Do NOT create a new person or a "similar-looking" person. The output face must be a direct, photographic likeness of the input face.
+                    2.  **No Facial Alterations:** Do NOT alter their fundamental facial structure, including the shape of the eyes, nose, mouth, and jawline.
+                    3.  **Preserve Details:** Maintain the original eye color, hair color, and skin tone.
+
+                    **NEGATIVE PROMPT (Things to AVOID):**
+                    -   Changing the subject's face.
+                    -   Generating a different person.
+                    -   Inconsistent facial features.
+                    -   Altering the DNA of the character.
+                    ${negativePrompt ? `- ${negativePrompt}`: ''}
+
                     [STYLE INSTRUCTION] ${trend.prompt}
-                    [SUBJECT] The subject is the person in the provided image.
+                    ${subjectInstruction}
                     [ASPECT RATIO] The final image MUST have an aspect ratio of ${aspectRatio}.
+                    
                     [USER HINTS]
                     Name/Title: ${name || 'Not provided'}
                     Description: ${description || 'Not provided'}
-                    [OUTPUT] Generate a single, high-quality image adhering to all instructions.
+                    
+                    [OUTPUT] Generate a single, high-quality image adhering to all instructions, especially the critical identity preservation rules.
                 `;
-                const parts = [sourceImage.apiPayload, { text: finalPrompt }];
+                parts.push({ text: finalPrompt });
+                
                 const imageUrl = await callApi(() => generateImage(ai, parts));
                 return { trendKey, imageUrl };
             });
@@ -1436,7 +1624,10 @@ const AITrendMaker = ({ onBack }: { onBack: () => void }) => {
                 </div>
 
                 <div className="space-y-6 bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-md border border-light-border dark:border-dark-border">
-                    <ImageUploader label={t('sourceImage')} onImageUpload={setSourceImage} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <ImageUploader label={t('uploadSubject')} onImageUpload={setSourceImage} />
+                        <ImageUploader label={t('uploadSecondSubject')} onImageUpload={setSecondarySourceImage} />
+                    </div>
                     <div>
                         <label htmlFor="nameTitle" className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('nameTitle')}</label>
                         <input id="nameTitle" type="text" value={name} onChange={e => setName(e.target.value)} placeholder={t('nameTitlePlaceholder')} className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text" />
@@ -1444,6 +1635,10 @@ const AITrendMaker = ({ onBack }: { onBack: () => void }) => {
                      <div>
                         <label htmlFor="hintDescription" className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('hintDescription')}</label>
                         <textarea id="hintDescription" value={description} onChange={e => setDescription(e.target.value)} placeholder={t('hintDescriptionPlaceholder')} rows={3} className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text" />
+                    </div>
+                    <div>
+                        <label htmlFor="negativePrompt" className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('negativePrompt')}</label>
+                        <textarea id="negativePrompt" value={negativePrompt} onChange={e => setNegativePrompt(e.target.value)} placeholder={t('negativePromptPlaceholder')} rows={3} className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text" />
                     </div>
                      <div>
                         <label className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('aspectRatio')}</label>
@@ -1515,6 +1710,190 @@ const AITrendMaker = ({ onBack }: { onBack: () => void }) => {
     );
 };
 
+
+const LookbookStudio = ({ onBack }: { onBack: () => void }) => {
+    const { t, language } = useAppContext();
+    const { ai } = useApi();
+    const [images, setImages] = useState<UploadedImage[]>([]);
+    const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
+    const [numPages, setNumPages] = useState(4);
+    const [preset, setPreset] = useState('wedding');
+    const [textContent, setTextContent] = useState('');
+    const [positivePrompt, setPositivePrompt] = useState('');
+    const [negativePrompt, setNegativePrompt] = useState('blurry, distorted, malformed faces, different person, changing subject DNA');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [results, setResults] = useState<string[]>([]);
+
+    const presets = {
+        'wedding': { label: t('lookbookWedding'), prompt: 'The theme is a romantic wedding lookbook. The design should be elegant, soft, and timeless. Use light colors and delicate typography placeholders.' },
+        'yearbook': { label: t('lookbookYearbook'), prompt: 'The theme is a graduation yearbook or memory book. The design should be fun, dynamic, and youthful. It can include collage-style layouts and playful graphic elements.' },
+        'travel': { label: t('lookbookTravel'), prompt: 'The theme is a travel adventure log. The design should be exciting and cinematic. Use bold typography and layouts that convey a sense of journey and exploration.' },
+        'timeline': { label: t('lookbookTimeline'), prompt: 'The theme is a personal timeline, showing a progression of time. The design should be sentimental and narrative-driven. Arrange photos to suggest a story from past to present.' },
+    };
+
+    const handleSubmit = async () => {
+        if (!ai) {
+            setError(t('serviceUnavailable'));
+            return;
+        }
+        if (images.length < 2) {
+            setError(t('errorNotEnoughImages'));
+            return;
+        }
+        const pagesToGenerate = Math.max(1, Math.min(numPages, 10)); // Cap at 10 pages
+
+        setIsLoading(true);
+        setError('');
+        setResults([]);
+        
+        try {
+            const contentLines = textContent.split('\n').filter(line => line.trim() !== '');
+
+            for (let i = 0; i < pagesToGenerate; i++) {
+                 const pageContent = contentLines[i] || '';
+
+                 const textInstruction = pageContent
+                    ? `**Text Integration:** You MUST use the exact text provided in the '[PAGE CONTENT]' section for this page's headlines and body copy. Arrange and style this text beautifully within the layout. The common format is 'TITLE // BODY'. Use the text before '//' as a prominent headline. Do NOT use 'lorem ipsum' filler text.`
+                    : `**Placeholder Text:** Include placeholder text (like 'lorem ipsum') for headlines and body copy. DO NOT generate real, meaningful text. The text should simply act as a design element.`;
+                
+                 const contentSection = pageContent ? `[PAGE CONTENT] ${pageContent}` : '';
+
+                 const finalPrompt = `
+                    [TASK] Your task is to design a single, elegant lookbook page. This is page ${i + 1} of ${pagesToGenerate}.
+
+                    [IDENTITY PRESERVATION]
+                    **CRITICAL INSTRUCTION: ABSOLUTE LIKENESS REQUIRED**
+                    You MUST strictly preserve the facial features, structure, and identity of the subject(s) from ALL the provided input images. The people in the output MUST be perfectly and instantly recognizable as the same people.
+
+                    **RULES:**
+                    1.  **Direct Likeness:** Do NOT create a new person. The output face must be a direct, photographic likeness of the input faces.
+                    2.  **No Facial Alterations:** Do NOT alter their fundamental facial structure, eye color, hair color, or skin tone.
+
+                    [DESIGN INSTRUCTIONS]
+                    1.  **Layout:** Create a clean, minimalist, and professional layout inspired by high-end fashion or wedding magazines. Use a balanced composition with ample white space.
+                    2.  **Photo Arrangement:** Artistically arrange one or more of the provided photos on the page. You can crop, resize, and position them creatively to create a dynamic composition.
+                    3.  ${textInstruction}
+                    4.  **Aesthetics:** The overall color palette and mood should be harmonious and sophisticated, complementing the photos.
+
+                    [THEME] ${presets[preset as keyof typeof presets].prompt}
+                    [PAGE ORIENTATION] The final page MUST have a ${orientation} orientation. For portrait, use an aspect ratio like 3:4. For landscape, use 4:3.
+                    
+                    ${contentSection}
+
+                    [USER HINTS]
+                    Positive Details: ${positivePrompt || 'None'}
+                    
+                    [NEGATIVE PROMPT (Things to AVOID)]
+                    - Changing the subject's face or identity.
+                    - Generating a different person.
+                    - Inconsistent facial features.
+                    - Altering the DNA of the character.
+                    - Ugly, poorly designed, cluttered layout.
+                    - Using 'lorem ipsum' if real text is provided in [PAGE CONTENT].
+                    - Generating real content if no text is provided (use lorem ipsum instead).
+                    ${negativePrompt ? `- ${negativePrompt}`: ''}
+                `;
+                
+                const parts = [
+                    ...images.map(img => img.apiPayload),
+                    { text: finalPrompt }
+                ];
+                
+                const imageUrl = await callApi(() => generateImage(ai, parts));
+                setResults(prev => [...prev, imageUrl]);
+            }
+        } catch (err: any) {
+             console.error(err);
+             setError(err.message || t('error'));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="p-4 md:p-8 animate-fade-in">
+             <button onClick={onBack} className="mb-6 flex items-center text-light-text dark:text-dark-text hover:underline">
+                <i className="fas fa-arrow-left mr-2"></i> {t('goBack')}
+            </button>
+            <div className="max-w-6xl mx-auto">
+                 <div className="text-center mb-8">
+                    <h2 className="text-4xl md:text-5xl font-extrabold mb-2 bg-gradient-to-r from-blue-400 via-teal-500 to-green-500 bg-clip-text text-transparent">
+                        {t('lookbookStudioTitle')}
+                    </h2>
+                    <p className="text-lg text-gray-500 dark:text-gray-300">{t('lookbookStudioDesc')}</p>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-1 space-y-6 bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-md border border-light-border dark:border-dark-border">
+                        <MultiImageUploader label={t('uploadMultipleImages')} onImagesUpload={setImages} />
+                        
+                        <div>
+                            <label className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('preset')}</label>
+                            <select value={preset} onChange={(e) => setPreset(e.target.value)} className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text">
+                                {Object.entries(presets).map(([key, value]) => (
+                                    <option key={key} value={key}>{value.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('pageOrientation')}</label>
+                             <div className="flex space-x-2 rounded-lg p-1 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border">
+                                <button onClick={() => setOrientation('portrait')} className={`w-full px-3 py-2 text-sm font-semibold rounded-md transition-colors ${orientation === 'portrait' ? 'btn-primary text-white' : 'bg-transparent'}`}>{t('portrait')}</button>
+                                <button onClick={() => setOrientation('landscape')} className={`w-full px-3 py-2 text-sm font-semibold rounded-md transition-colors ${orientation === 'landscape' ? 'btn-primary text-white' : 'bg-transparent'}`}>{t('landscape')}</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="numPages" className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('numberOfPages')}</label>
+                            <input id="numPages" type="number" value={numPages} onChange={e => setNumPages(Math.max(1, parseInt(e.target.value, 10) || 1))} min="1" max="10" className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md" />
+                        </div>
+                        
+                        <div>
+                            <label htmlFor="lookbook-content" className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('lookbookContent')}</label>
+                            <textarea id="lookbook-content" value={textContent} onChange={e => setTextContent(e.target.value)} rows={4} placeholder={t('lookbookContentPlaceholder')} className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md" />
+                        </div>
+
+                        <div>
+                            <label htmlFor="lookbook-positive" className="block text-sm font-bold mb-2">{t('positivePrompt')}</label>
+                            <textarea id="lookbook-positive" value={positivePrompt} onChange={e => setPositivePrompt(e.target.value)} rows={3} placeholder={t('positivePromptPlaceholder')} className="w-full p-2 bg-light-bg dark:bg-dark-bg border rounded-md" />
+                        </div>
+                        
+                        <div>
+                            <label htmlFor="lookbook-negative" className="block text-sm font-bold mb-2">{t('negativePrompt')}</label>
+                            <textarea id="lookbook-negative" value={negativePrompt} onChange={e => setNegativePrompt(e.target.value)} rows={3} placeholder={t('negativePromptPlaceholder')} className="w-full p-2 bg-light-bg dark:bg-dark-bg border rounded-md" />
+                        </div>
+                        
+                        <button onClick={handleSubmit} disabled={isLoading} className="w-full btn-primary text-white font-bold py-3 rounded-lg flex items-center justify-center disabled:opacity-50">
+                            <i className="fas fa-book-open mr-2"></i>
+                            {isLoading ? t('generatingLookbook') : t('generateLookbook')}
+                        </button>
+                    </div>
+
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-md border border-light-border dark:border-dark-border min-h-[400px]">
+                             <h3 className="text-xl font-bold mb-4 text-light-text dark:text-dark-text text-center">{t('result')}</h3>
+                             {isLoading && results.length === 0 && <Spinner />}
+                             {error && <p className="text-red-500 mt-4 text-center">{error}</p>}
+                             <div className={`grid gap-4 ${orientation === 'portrait' ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
+                                {results.map((src, index) => (
+                                    <div key={index} className="group relative">
+                                        <img src={src} alt={`Page ${index + 1}`} className="w-full h-auto rounded-lg shadow-md" />
+                                         <a href={src} download={`lookbook-page-${index+1}.png`} className="absolute bottom-2 right-2 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <i className="fas fa-download"></i>
+                                        </a>
+                                    </div>
+                                ))}
+                                {isLoading && results.length > 0 && <div className="flex justify-center items-center"><Spinner /></div>}
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const PoseStudio = ({ onBack }: { onBack: () => void }) => {
     const { t, language } = useAppContext();
@@ -2092,6 +2471,140 @@ const PropFusion = ({ onBack }: {onBack: () => void}) => {
                          <h3 className="text-xl font-bold mb-4 text-light-text dark:text-dark-text">{t('result')}</h3>
                          <div className="w-full h-96 bg-light-bg dark:bg-dark-bg rounded-lg flex items-center justify-center border border-light-border dark:border-dark-border">
                              {isLoading ? <Spinner /> : resultImage && characterImage ? <ImageComparator beforeSrc={characterImage.dataUrl} afterSrc={resultImage} /> : <p className="text-gray-500">{t('preview')}</p>}
+                         </div>
+                         {error && <p className="text-red-500 mt-4">{error}</p>}
+                    </div>
+                    {resultImage && !isLoading && (
+                        <a href={resultImage} download={getDownloadFilename(resultImage)} className="w-full btn-primary text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center">
+                            <i className="fas fa-download mr-2"></i> {t('download')}
+                        </a>
+                    )}
+                    <button onClick={handleSubmit} disabled={isLoading} className="w-full btn-primary text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i className="fas fa-cogs mr-2"></i> {isLoading ? t('generating') : t('generate')}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ProductPlacement = ({ onBack }: {onBack: () => void}) => {
+    const { t, language } = useAppContext();
+    const { ai } = useApi();
+    const [sceneImage, setSceneImage] = useState<UploadedImage | null>(null);
+    const [productImage, setProductImage] = useState<UploadedImage | null>(null);
+    const [positivePrompt, setPositivePrompt] = useState(() => t('productPlacementPositiveDefault'));
+    const [negativePrompt, setNegativePrompt] = useState(() => t('productPlacementNegativeDefault'));
+    const [preset, setPreset] = useState('product-commercial');
+    const [aspectRatio, setAspectRatio] = useState('auto');
+    const [outputFormat, setOutputFormat] = useState<OutputFormat>('image/jpeg');
+    const [isLoading, setIsLoading] = useState(false);
+    const [resultImage, setResultImage] = useState<string|null>(null);
+    const [error, setError] = useState('');
+
+    const prevLangRef = useRef(language);
+    useEffect(() => {
+        if (prevLangRef.current !== language) {
+            setPositivePrompt(currentPrompt => 
+                currentPrompt === TRANSLATIONS[prevLangRef.current as Language]['productPlacementPositiveDefault']
+                    ? t('productPlacementPositiveDefault')
+                    : currentPrompt
+            );
+            setNegativePrompt(currentPrompt => 
+                currentPrompt === TRANSLATIONS[prevLangRef.current as Language]['productPlacementNegativeDefault']
+                    ? t('productPlacementNegativeDefault')
+                    : currentPrompt
+            );
+            prevLangRef.current = language;
+        }
+    }, [language, t]);
+
+    const handleSubmit = async () => {
+        if (!ai) {
+            setError(t('serviceUnavailable'));
+            return;
+        }
+        if (!sceneImage || !productImage) {
+            setError(language === 'vi' ? 'Vui lòng tải lên cả ảnh bối cảnh và sản phẩm.' : 'Please upload both scene and product images.');
+            return;
+        }
+        setIsLoading(true);
+        setResultImage(null);
+        setError('');
+        try {
+            let finalPositivePrompt = positivePrompt;
+            let finalNegativePrompt = negativePrompt;
+
+            if (language === 'vi') {
+                if (positivePrompt.trim()) finalPositivePrompt = await callApi(() => translateText(ai, positivePrompt, 'Vietnamese', 'English'));
+                if (negativePrompt.trim()) finalNegativePrompt = await callApi(() => translateText(ai, negativePrompt, 'Vietnamese', 'English'));
+            }
+
+            const presetDirective = buildPresetDirective(preset, { aspect: aspectRatio });
+            const finalPrompt = `
+                ${presetDirective}\n\n
+                [USER_PROMPT]
+                instruction: This is a product placement task. Your goal is to seamlessly and realistically place the object from the second image (the product) into the first image (the scene). You MUST match the scene's lighting, shadows, perspective, and scale perfectly. The product should look like it naturally belongs in the environment.
+                Positive: ${finalPositivePrompt}
+                Negative: ${finalNegativePrompt}
+                Output-Format: ${outputFormat.split('/')[1]}
+            `;
+            const parts = [sceneImage.apiPayload, productImage.apiPayload, { text: finalPrompt }];
+            const generatedImage = await callApi(() => generateImage(ai, parts));
+            setResultImage(generatedImage);
+        } catch (err: any) {
+            console.error(err);
+            setError(err.message || t('error'));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    return (
+        <div className="p-4 md:p-8 animate-fade-in">
+            <button onClick={onBack} className="mb-6 flex items-center text-light-text dark:text-dark-text hover:underline"><i className="fas fa-arrow-left mr-2"></i> {t('goBack')}</button>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="space-y-6 bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-md border border-light-border dark:border-dark-border">
+                    <ToolInfo toolKey="placement" />
+                    <ImageUploader label={t('uploadScene')} onImageUpload={setSceneImage} />
+                    <ImageUploader label={t('uploadProduct')} onImageUpload={setProductImage} />
+                    <div>
+                        <label className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('preset')}</label>
+                        <select value={preset} onChange={(e) => setPreset(e.target.value)} className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text">
+                            {Object.entries(PRESETS).map(([key, value]) => (<option key={key} value={key}>{value.label[language as Language]}</option>))}
+                        </select>
+                    </div>
+
+                     <div>
+                        <label className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('aspectRatio')}</label>
+                        <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)} className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text">
+                           {ASPECT_RATIOS.map(ratio => (<option key={ratio.value} value={ratio.value}>{ratio.label[language as Language]}</option>))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('outputFormat')}</label>
+                        <select value={outputFormat} onChange={(e) => setOutputFormat(e.target.value as OutputFormat)} className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text">
+                           <option value="image/jpeg">JPEG</option>
+                           <option value="image/png">PNG</option>
+                           <option value="image/webp">WEBP</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="positivePrompt" className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('positivePrompt')}</label>
+                      <textarea id="positivePrompt" value={positivePrompt} onChange={(e) => setPositivePrompt(e.target.value)} placeholder={t('positivePromptPlaceholder')} rows={3} className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text" />
+                    </div>
+                    <div>
+                      <label htmlFor="negativePrompt" className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('negativePrompt')}</label>
+                      <textarea id="negativePrompt" value={negativePrompt} onChange={(e) => setNegativePrompt(e.target.value)} placeholder={t('negativePromptPlaceholder')} rows={3} className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text" />
+                    </div>
+                </div>
+                <div className="space-y-6">
+                    <div className="bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-md border border-light-border dark:border-dark-border">
+                         <h3 className="text-xl font-bold mb-4 text-light-text dark:text-dark-text">{t('result')}</h3>
+                         <div className="w-full h-96 bg-light-bg dark:bg-dark-bg rounded-lg flex items-center justify-center border border-light-border dark:border-dark-border">
+                             {isLoading ? <Spinner /> : resultImage && sceneImage ? <ImageComparator beforeSrc={sceneImage.dataUrl} afterSrc={resultImage} /> : <p className="text-gray-500">{t('preview')}</p>}
                          </div>
                          {error && <p className="text-red-500 mt-4">{error}</p>}
                     </div>
@@ -3210,6 +3723,10 @@ const App = () => {
         return <AITrendMaker onBack={() => setPage('home')} />;
       case 'batch':
         return <WhiskAutoStudio onBack={() => setPage('home')} />;
+      case 'lookbook':
+        return <LookbookStudio onBack={() => setPage('home')} />;
+      case 'placement':
+        return <ProductPlacement onBack={() => setPage('home')} />;
       case 'home':
       default:
         return <HomePage onNavigate={handleNavigate} />;
