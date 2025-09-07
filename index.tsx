@@ -17,7 +17,7 @@ import {createRoot} from 'react-dom/client';
 import {GoogleGenAI, Modality} from '@google/genai';
 
 // --- CONSTANTS & TYPES ---
-type Page = 'home' | 'pose' | 'prop' | 'design' | 'creative' | 'stylist' | 'architect' | 'video' | 'magic' | 'background';
+type Page = 'home' | 'pose' | 'prop' | 'design' | 'creative' | 'stylist' | 'architect' | 'video' | 'magic' | 'background' | 'trendko';
 type Theme = 'light' | 'dark';
 type Language = 'en' | 'vi';
 type ControlMode = 'Pose' | 'Edge' | 'Depth' | 'Creative';
@@ -341,6 +341,42 @@ const PRESETS: Record<string, StructuredPreset> = {
     },
 };
 
+const TRENDS: Record<string, { label: {[key in Language]: string}; prompt: string; }> = {
+    '90s-yearbook': {
+        label: { en: '90s Yearbook', vi: 'Kỷ yếu thập niên 90' },
+        prompt: 'Create a 90s high school yearbook photo. Use a soft-focus, slightly grainy look with a classic mottled blue or gray studio background. The subject should have 90s fashion and hairstyles (e.g., feathered bangs, scrunchies, oversized sweaters). The lighting should be flat and professional-looking. The overall mood is nostalgic and slightly awkward.'
+    },
+    'gta-poster': {
+        label: { en: 'GTA Poster', vi: 'Poster GTA' },
+        prompt: 'Transform the image into the iconic Grand Theft Auto (GTA) video game cover art style. Use bold, black outlines, cel-shaded colors, and a highly stylized, graphic novel look. The composition should be dynamic, often with multiple panels or vignettes in the background. The mood is gritty, urban, and action-packed.'
+    },
+    'anime-style': {
+        label: { en: '80s Anime', vi: 'Anime thập niên 80' },
+        prompt: 'Redraw the subject in a classic 1980s anime style. Features should be slightly simplified with large, expressive eyes. Use a vintage color palette with slightly muted or pastel tones. The background could be a simple, abstract pattern or a detailed cityscape. Add a film grain effect. The mood is nostalgic and retro.'
+    },
+    'claymation': {
+        label: { en: 'Claymation', vi: 'Hoạt hình đất sét' },
+        prompt: 'Recreate the subject as a claymation character (like Aardman Animations). The texture should look like real plasticine clay, complete with fingerprints and slight imperfections. The shapes should be soft and rounded. The lighting should be warm and give a sense of a physical miniature set. The mood is charming, handcrafted, and whimsical.'
+    },
+    'pixel-art': {
+        label: { en: 'Pixel Art', vi: 'Nghệ thuật Pixel' },
+        prompt: 'Convert the image into detailed 16-bit pixel art. Use a limited but vibrant color palette. The lines should be clean and aliased (jagged). The result should look like a character sprite from a classic SNES or Sega Genesis game. The mood is retro and digital.'
+    },
+    'vintage-film': {
+        label: { en: 'Vintage Film', vi: 'Phim Cổ điển' },
+        prompt: 'Give the image the look of a vintage 1970s film photograph (like a faded Kodachrome or Ektachrome print). Colors should be warm, with slightly faded blacks and a soft yellow or red tint. Add a subtle film grain and maybe a light leak effect in a corner. The mood is nostalgic, warm, and analog.'
+    },
+    'fantasy-art': {
+        label: { en: 'Fantasy Art', vi: 'Nghệ thuật Fantasy' },
+        prompt: 'Reimagine the subject as a character in a high-fantasy digital painting. The style should be epic and painterly, with dramatic lighting (god rays, magical glows). The subject can be adorned with fantasy elements like elven ears, intricate armor, or flowing robes. The background should be a majestic landscape or mystical forest. The mood is epic, adventurous, and magical.'
+    },
+    'cyberpunk': {
+        label: { en: 'Cyberpunk', vi: 'Cyberpunk' },
+        prompt: 'Transform the subject into a cyberpunk character. The setting should be a neon-lit, rainy, futuristic city street. The subject should have cybernetic enhancements, futuristic clothing, and glowing elements. The color palette should be dominated by blues, purples, and bright neons. The mood is dark, high-tech, and dystopian.'
+    }
+};
+
+
 const buildPresetDirective = (presetId: string, overrides?: { beauty?: 'on' | 'off', aspect?: string }) => {
     const p = PRESETS[presetId];
     if (!p) return '';
@@ -417,6 +453,8 @@ const TRANSLATIONS = {
     magicStudioDesc: 'Beautify, restore old photos, and upscale with one click.',
     backgroundStudioTitle: 'AI Background Remover',
     backgroundStudioDesc: 'Remove the background from any image with one click.',
+    trendkoTitle: 'AI Trend Maker',
+    trendkoDesc: 'Create viral-style images with a single click.',
     // Tool Page
     uploadCharacter: 'Upload Character',
     uploadPose: 'Upload Pose Sketch',
@@ -439,6 +477,17 @@ const TRANSLATIONS = {
     negativePrompt: 'Negative Prompt',
     negativePromptPlaceholder: 'Describe what you want to avoid...',
     negativePromptExample: 'e.g., blurry, deformed, unnatural hands, low quality...',
+    sourceImage: 'Source Image',
+    nameTitle: 'Name / Title',
+    nameTitlePlaceholder: 'E.g., Your name, your character\'s name',
+    hintDescription: 'Hint / Description',
+    hintDescriptionPlaceholder: 'E.g., Your profession, hobby, passion, a place...',
+    chooseTrends: 'Choose Trends',
+    selectAll: 'Select All',
+    deselectAll: 'Deselect All',
+    generateTrends: 'Generate Trends',
+    generatingTrends: 'Generating Trends...',
+    noTrendsSelected: 'Please select at least one trend to generate.',
     // Default Prompts
     stylistPositiveDefault: 'hyper-realistic, detailed, 8k',
     stylistNegativeDefault: 'blurry, distorted, malformed, deformed',
@@ -562,6 +611,8 @@ const TRANSLATIONS = {
     magicStudioDesc: 'Làm đẹp, phục chế ảnh cũ và nâng cấp độ phân giải.',
     backgroundStudioTitle: 'Xóa Nền AI',
     backgroundStudioDesc: 'Xóa nền khỏi bất kỳ hình ảnh nào chỉ bằng một cú nhấp chuột.',
+    trendkoTitle: 'AI Trend Maker',
+    trendkoDesc: 'Tạo ảnh theo phong cách viral chỉ bằng một cú nhấp chuột.',
     // Tool Page
     uploadCharacter: 'Tải lên Nhân vật',
     uploadPose: 'Tải lên Phác thảo Tư thế',
@@ -584,6 +635,17 @@ const TRANSLATIONS = {
     negativePrompt: 'Prompt Tiêu cực',
     negativePromptPlaceholder: 'Mô tả những gì bạn muốn tránh...',
     negativePromptExample: 'VD: mờ, biến dạng, tay không tự nhiên, chất lượng thấp...',
+    sourceImage: 'Ảnh Gốc',
+    nameTitle: 'Tên / Tiêu đề',
+    nameTitlePlaceholder: 'Ví dụ: Tên của bạn, tên mô hình của bạn',
+    hintDescription: 'Gợi ý / Mô tả',
+    hintDescriptionPlaceholder: 'Nghề nghiệp, sở thích, đam mê, địa điểm bạn muốn...',
+    chooseTrends: 'Chọn Trends',
+    selectAll: 'Chọn tất cả',
+    deselectAll: 'Bỏ chọn tất cả',
+    generateTrends: 'Tạo ảnh Trends',
+    generatingTrends: 'Đang tạo Trends...',
+    noTrendsSelected: 'Vui lòng chọn ít nhất một trend để tạo ảnh.',
     // Default Prompts
     stylistPositiveDefault: 'siêu thực, chi tiết, 8k',
     stylistNegativeDefault: 'mờ, méo mó, dị dạng, biến dạng',
@@ -1207,6 +1269,7 @@ const ToggleSwitch = ({ id, checked, onChange, disabled, label, description }: T
 const HomePage = ({ onNavigate }: {onNavigate: (page: Page) => void}) => {
   const { t } = useAppContext();
   const tools = [
+    { page: 'trendko', icon: 'fa-fire', title: t('trendkoTitle'), desc: t('trendkoDesc') },
     { page: 'pose', icon: 'fa-street-view', title: t('poseStudioTitle'), desc: t('poseStudioDesc') },
     { page: 'prop', icon: 'fa-magic', title: t('propFusionTitle'), desc: t('propFusionDesc') },
     { page: 'design', icon: 'fa-palette', title: t('designStudioTitle'), desc: t('designStudioDesc') },
@@ -1238,6 +1301,183 @@ const HomePage = ({ onNavigate }: {onNavigate: (page: Page) => void}) => {
     </div>
   );
 };
+
+const AITrendMaker = ({ onBack }: { onBack: () => void }) => {
+    const { t, language } = useAppContext();
+    const { ai } = useApi();
+    const [sourceImage, setSourceImage] = useState<UploadedImage | null>(null);
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [aspectRatio, setAspectRatio] = useState<'9:16' | '1:1' | '16:9'>('9:16');
+    const [selectedTrends, setSelectedTrends] = useState<string[]>([]);
+    const [results, setResults] = useState<{ trendKey: string; imageUrl: string; }[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleTrendToggle = (trendKey: string) => {
+        setSelectedTrends(prev =>
+            prev.includes(trendKey)
+                ? prev.filter(t => t !== trendKey)
+                : [...prev, trendKey]
+        );
+    };
+    
+    const handleSelectAll = () => setSelectedTrends(Object.keys(TRENDS));
+    const handleDeselectAll = () => setSelectedTrends([]);
+    
+    const handleSubmit = async () => {
+        if (!ai) {
+            setError(t('serviceUnavailable'));
+            return;
+        }
+        if (!sourceImage) {
+            setError(language === 'vi' ? 'Vui lòng tải lên Ảnh Gốc.' : 'Please upload the Source Image.');
+            return;
+        }
+        if (selectedTrends.length === 0) {
+            setError(t('noTrendsSelected'));
+            return;
+        }
+
+        setIsLoading(true);
+        setResults([]);
+        setError('');
+
+        try {
+            const generationPromises = selectedTrends.map(async (trendKey) => {
+                const trend = TRENDS[trendKey];
+                const finalPrompt = `
+                    [TASK] Create a viral trend image.
+                    [STYLE INSTRUCTION] ${trend.prompt}
+                    [SUBJECT] The subject is the person in the provided image.
+                    [ASPECT RATIO] The final image MUST have an aspect ratio of ${aspectRatio}.
+                    [USER HINTS]
+                    Name/Title: ${name || 'Not provided'}
+                    Description: ${description || 'Not provided'}
+                    [OUTPUT] Generate a single, high-quality image adhering to all instructions.
+                `;
+                const parts = [sourceImage.apiPayload, { text: finalPrompt }];
+                const imageUrl = await callApi(() => generateImage(ai, parts));
+                return { trendKey, imageUrl };
+            });
+
+            const settledResults = await Promise.allSettled(generationPromises);
+            
+            const successfulResults = settledResults
+                .filter(res => res.status === 'fulfilled')
+                .map(res => (res as PromiseFulfilledResult<{ trendKey: string; imageUrl: string; }>).value);
+
+            const failedResults = settledResults.filter(res => res.status === 'rejected');
+            
+            setResults(successfulResults);
+
+            if (failedResults.length > 0) {
+                 setError(`${failedResults.length} trend(s) failed to generate. Please try again.`);
+            }
+
+        } catch (err: any) {
+            console.error(err);
+            setError(err.message || t('error'));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="p-4 md:p-8 animate-fade-in">
+            <button onClick={onBack} className="mb-6 flex items-center text-light-text dark:text-dark-text hover:underline">
+                <i className="fas fa-arrow-left mr-2"></i> {t('goBack')}
+            </button>
+            <div className="max-w-4xl mx-auto">
+                <div className="text-center mb-8">
+                    <h2 className="text-4xl md:text-5xl font-extrabold mb-2 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">
+                        AI Trend Maker
+                    </h2>
+                    <p className="text-lg text-gray-500 dark:text-gray-300">
+                        Create viral-style images with a single click.
+                    </p>
+                </div>
+
+                <div className="space-y-6 bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-md border border-light-border dark:border-dark-border">
+                    <ImageUploader label={t('sourceImage')} onImageUpload={setSourceImage} />
+                    <div>
+                        <label htmlFor="nameTitle" className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('nameTitle')}</label>
+                        <input id="nameTitle" type="text" value={name} onChange={e => setName(e.target.value)} placeholder={t('nameTitlePlaceholder')} className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text" />
+                    </div>
+                     <div>
+                        <label htmlFor="hintDescription" className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('hintDescription')}</label>
+                        <textarea id="hintDescription" value={description} onChange={e => setDescription(e.target.value)} placeholder={t('hintDescriptionPlaceholder')} rows={3} className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text" />
+                    </div>
+                     <div>
+                        <label className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('aspectRatio')}</label>
+                        <div className="flex space-x-2 rounded-lg p-1 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border">
+                            {(['9:16', '1:1', '16:9'] as const).map((ratio) => (
+                                <button key={ratio} onClick={() => setAspectRatio(ratio)} className={`w-full px-3 py-2 text-sm font-semibold rounded-md transition-colors duration-200 ${aspectRatio === ratio ? 'btn-primary text-white' : 'bg-transparent text-light-text dark:text-dark-text hover:bg-light-surface dark:hover:bg-dark-surface'}`}>
+                                    {ratio}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div>
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="text-sm font-bold text-light-text dark:text-dark-text">{t('chooseTrends')}</label>
+                            <div>
+                                <button onClick={handleSelectAll} className="text-xs font-semibold text-light-primary dark:text-dark-primary hover:underline mr-4">{t('selectAll')}</button>
+                                <button onClick={handleDeselectAll} className="text-xs font-semibold text-gray-500 hover:underline">{t('deselectAll')}</button>
+                            </div>
+                        </div>
+                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                            {Object.entries(TRENDS).map(([key, trend]) => (
+                                <button key={key} onClick={() => handleTrendToggle(key)} className={`p-3 text-sm font-semibold rounded-lg border-2 transition-all duration-200 text-left ${selectedTrends.includes(key) ? 'border-light-primary dark:border-dark-primary bg-light-primary/10 dark:bg-dark-primary/10 text-light-primary dark:text-dark-primary' : 'border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg hover:border-gray-400 dark:hover:border-gray-500'}`}>
+                                    {trend.label[language]}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mt-6">
+                     <button onClick={handleSubmit} disabled={isLoading} className="w-full btn-primary text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i className="fas fa-cogs mr-2"></i> {isLoading ? t('generatingTrends') : t('generateTrends')}
+                    </button>
+                </div>
+                
+                {error && <p className="text-red-500 mt-4 text-center">{error}</p>}
+                
+                {isLoading && (
+                    <div className="mt-8 text-center">
+                        <Spinner />
+                        <p className="mt-4">{t('generatingTrends')}</p>
+                    </div>
+                )}
+
+                {results.length > 0 && !isLoading && (
+                    <div className="mt-8">
+                        <h3 className="text-2xl font-bold mb-4 text-light-text dark:text-dark-text text-center">{t('result')}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {results.map(({ trendKey, imageUrl }) => (
+                                <div key={trendKey} className="bg-light-surface dark:bg-dark-surface rounded-lg shadow-md border border-light-border dark:border-dark-border overflow-hidden">
+                                    <img src={imageUrl} alt={TRENDS[trendKey].label[language]} className="w-full h-auto object-cover" />
+                                    <div className="p-3">
+                                        <h4 className="font-bold text-light-text dark:text-dark-text">{TRENDS[trendKey].label[language]}</h4>
+                                        <a href={imageUrl} download={`${trendKey}.png`} className="w-full mt-2 btn-secondary bg-gray-600 hover:bg-gray-500 text-white text-sm font-bold py-2 px-3 rounded-lg flex items-center justify-center">
+                                            <i className="fas fa-download mr-2"></i> {t('download')}
+                                        </a>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+                
+                 <div className="text-center mt-8 text-xs text-gray-500">
+                    <p>Powered by Gemini 2.5 Flash Image Preview | Created by M_A.i</p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 const PoseStudio = ({ onBack }: { onBack: () => void }) => {
     const { t, language } = useAppContext();
@@ -2760,6 +3000,8 @@ const App = () => {
         return <AIMagic onBack={() => setPage('home')} />;
       case 'background':
         return <AIBackground onBack={() => setPage('home')} />;
+      case 'trendko':
+        return <AITrendMaker onBack={() => setPage('home')} />;
       case 'home':
       default:
         return <HomePage onNavigate={handleNavigate} />;
