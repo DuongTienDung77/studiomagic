@@ -1,5 +1,5 @@
 {
-  "name": "ai-magic-tool-studio-full-api-test-11",
+  "name": "ai-magic-tool-studio-full-api-test-đợi-kết-quả",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,8 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react-dom": "^19.1.1",
     "react": "^19.1.1",
+    "react-dom": "^19.1.1",
     "@google/genai": "^1.17.0"
   },
   "devDependencies": {

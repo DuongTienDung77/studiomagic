@@ -396,21 +396,6 @@ const TRANSLATIONS = {
     // Header
     toggleTheme: 'Toggle Theme',
     language: 'Language',
-    apiKey: 'API Key',
-    // API Key Modal
-    enterApiKey: 'Enter Google Gemini API Key',
-    apiKeyInstructions: 'Go to AI Studio → Get API key → Copy → Paste. Your key will be stored in your browser.',
-    getApiKey: 'Get API Key',
-    checkKey: 'Check',
-    saveKey: 'Save Key',
-    deleteKey: 'Delete Key',
-    cancel: 'Cancel',
-    keyValid: 'API Key is valid.',
-    keyInvalid: 'Invalid API Key. Please check it and try again.',
-    checkingKey: 'Checking...',
-    keySaved: 'API Key saved.',
-    keyDeleted: 'API Key deleted.',
-    apiKeyRequired: 'Please set your API Key first.',
     // Home Page
     homeTitle: 'Unleash Your Creativity',
     homeSubtitle: 'Choose a tool to begin your AI-powered artistic journey.',
@@ -475,6 +460,7 @@ const TRANSLATIONS = {
     beautify: 'Beautify',
     beautifyHint: '(Only applies to portrait presets)',
     error: 'An error occurred. Please try again.',
+    serviceUnavailable: 'Service is currently unavailable. Please try again later.',
     // Control Modes
     controlModePose: 'Pose',
     controlModeEdge: 'Edge',
@@ -555,21 +541,6 @@ const TRANSLATIONS = {
     // Header
     toggleTheme: 'Chuyển đổi Giao diện',
     language: 'Ngôn ngữ',
-    apiKey: 'Khóa API',
-    // API Key Modal
-    enterApiKey: 'Nhập API Key Google Gemini',
-    apiKeyInstructions: 'Vào AI Studio → Lấy khóa API → Sao chép → Dán. Key sẽ được lưu trong trình duyệt của bạn.',
-    getApiKey: 'Lấy Khóa API',
-    checkKey: 'Kiểm tra',
-    saveKey: 'Lưu khóa',
-    deleteKey: 'Xoá key',
-    cancel: 'Hủy',
-    keyValid: 'Khóa API hợp lệ.',
-    keyInvalid: 'Khóa API không hợp lệ. Vui lòng kiểm tra lại.',
-    checkingKey: 'Đang kiểm tra...',
-    keySaved: 'Đã lưu khóa API.',
-    keyDeleted: 'Đã xoá khóa API.',
-    apiKeyRequired: 'Vui lòng nhập Khóa API của bạn trước.',
     // Home Page
     homeTitle: 'Giải phóng Sáng tạo',
     homeSubtitle: 'Chọn một công cụ để bắt đầu hành trình nghệ thuật với AI.',
@@ -634,6 +605,7 @@ const TRANSLATIONS = {
     beautify: 'Làm đẹp da',
     beautifyHint: '(Chỉ áp dụng cho preset chân dung)',
     error: 'Đã xảy ra lỗi. Vui lòng thử lại.',
+    serviceUnavailable: 'Dịch vụ hiện không có sẵn. Vui lòng thử lại sau.',
     // Control Modes
     controlModePose: 'Tư thế',
     controlModeEdge: 'Đường viền',
@@ -710,7 +682,6 @@ const TRANSLATIONS = {
 interface IApiContext {
     ai: GoogleGenAI | null;
     apiKey: string;
-    setAndStoreApiKey: (key: string) => void;
     isKeySet: boolean;
 }
 
@@ -725,17 +696,8 @@ const useApi = () => {
 };
 
 const ApiProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini-api-key') || '');
+    const apiKey = process.env.API_KEY || '';
     
-    const setAndStoreApiKey = useCallback((key: string) => {
-        setApiKey(key);
-        if (key) {
-            localStorage.setItem('gemini-api-key', key);
-        } else {
-            localStorage.removeItem('gemini-api-key');
-        }
-    }, []);
-
     const ai = useMemo(() => {
         if (apiKey) {
             try {
@@ -751,9 +713,8 @@ const ApiProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const contextValue = useMemo(() => ({
         ai,
         apiKey,
-        setAndStoreApiKey,
         isKeySet: !!apiKey,
-    }), [ai, apiKey, setAndStoreApiKey]);
+    }), [ai, apiKey]);
 
     return (
         <ApiContext.Provider value={contextValue}>
@@ -972,7 +933,6 @@ interface IAppContext {
     setTheme: (theme: Theme) => void;
     language: Language;
     setLanguage: (lang: Language) => void;
-    openApiKeyModal: () => void;
     // Fix: Update the 't' function signature to be overloaded, providing type safety for string and string[] return types.
     t: {
         (key: ArrayTranslationKeys): string[];
@@ -990,110 +950,7 @@ const useAppContext = () => {
 };
 
 // --- UI Components ---
-const ApiKeyModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
-    const { apiKey, setAndStoreApiKey } = useApi();
-    const { t } = useAppContext();
-    const [localKey, setLocalKey] = useState(apiKey);
-    const [checkStatus, setCheckStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
-    const modalRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        setLocalKey(apiKey);
-        setCheckStatus('idle');
-    }, [apiKey, isOpen]);
-    
-    useEffect(() => {
-        const handleEscape = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                onClose();
-            }
-        };
-        const handleClickOutside = (event: MouseEvent) => {
-            if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-                onClose();
-            }
-        };
-        if (isOpen) {
-            document.addEventListener('keydown', handleEscape);
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-        return () => {
-            document.removeEventListener('keydown', handleEscape);
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [isOpen, onClose]);
-
-    if (!isOpen) return null;
-
-    const handleCheckKey = async () => {
-        const keyToCheck = localKey.trim();
-        if (!keyToCheck) return;
-        setCheckStatus('checking');
-        try {
-            const testAi = new GoogleGenAI({ apiKey: keyToCheck });
-            await testAi.models.generateContent({ model: 'gemini-2.5-flash', contents: 'test' });
-            setCheckStatus('valid');
-        } catch (error) {
-            console.error("API Key check failed:", error);
-            setCheckStatus('invalid');
-        }
-    };
-    
-    const handleSave = () => {
-        setAndStoreApiKey(localKey);
-        onClose();
-    };
-
-    const handleDelete = () => {
-        setAndStoreApiKey('');
-        setLocalKey('');
-    };
-
-    const getStatusMessage = () => {
-        switch (checkStatus) {
-            case 'checking': return <p className="text-sm text-yellow-500 mt-2">{t('checkingKey')}</p>;
-            case 'valid': return <p className="text-sm text-green-500 mt-2">{t('keyValid')}</p>;
-            case 'invalid': return <p className="text-sm text-red-500 mt-2">{t('keyInvalid')}</p>;
-            default: return null;
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 animate-fade-in" role="dialog" aria-modal="true">
-            <div ref={modalRef} className="bg-light-surface dark:bg-dark-surface p-6 rounded-2xl shadow-xl w-full max-w-md border border-light-border dark:border-dark-border">
-                <h2 className="text-xl font-bold mb-2 text-light-text dark:text-dark-text">{t('enterApiKey')}</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('apiKeyInstructions')} <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-light-primary dark:text-dark-primary underline">{t('getApiKey')}</a></p>
-                
-                <input 
-                    type="password"
-                    value={localKey}
-                    onChange={(e) => {
-                        setLocalKey(e.target.value);
-                        setCheckStatus('idle');
-                    }}
-                    placeholder="AIzaSy..."
-                    className="w-full p-3 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text mb-2 focus:ring-2 focus:ring-light-primary dark:focus:ring-dark-primary outline-none"
-                    aria-label={t('apiKey')}
-                />
-                <div className="min-h-[24px]">
-                    {getStatusMessage()}
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                    <button onClick={handleCheckKey} className="w-full bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-light-text dark:text-dark-text font-semibold py-2 px-4 rounded-lg transition-colors">{t('checkKey')}</button>
-                    <button onClick={handleSave} className="w-full btn-primary text-white font-semibold py-2 px-4 rounded-lg">{t('saveKey')}</button>
-                    <button onClick={handleDelete} className="w-full bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-light-text dark:text-dark-text font-semibold py-2 px-4 rounded-lg transition-colors">{t('deleteKey')}</button>
-                </div>
-                <div className="mt-2">
-                     <button onClick={onClose} className="w-auto bg-transparent hover:bg-gray-200 dark:hover:bg-gray-600 text-light-text dark:text-dark-text font-semibold py-2 px-4 rounded-lg transition-colors">{t('cancel')}</button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-
-const Header = ({ onApiKeyClick }: { onApiKeyClick: () => void }) => {
+const Header = () => {
   const { theme, setTheme, language, setLanguage, t } = useAppContext();
   const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
 
@@ -1116,7 +973,6 @@ const Header = ({ onApiKeyClick }: { onApiKeyClick: () => void }) => {
             <option value="vi">Tiếng Việt</option>
           </select>
         </div>
-        <button onClick={onApiKeyClick} className="btn-primary text-white font-bold py-2 px-4 rounded-lg text-sm">{t('apiKey')}</button>
       </div>
     </header>
   );
@@ -1351,16 +1207,15 @@ const ToggleSwitch = ({ id, checked, onChange, disabled, label, description }: T
 const HomePage = ({ onNavigate }: {onNavigate: (page: Page) => void}) => {
   const { t } = useAppContext();
   const tools = [
-    // Fix: Cast results of `t` function to `string` to match ToolCard prop types.
-    { page: 'pose', icon: 'fa-street-view', title: t('poseStudioTitle') as string, desc: t('poseStudioDesc') as string },
-    { page: 'prop', icon: 'fa-magic', title: t('propFusionTitle') as string, desc: t('propFusionDesc') as string },
-    { page: 'design', icon: 'fa-palette', title: t('designStudioTitle') as string, desc: t('designStudioDesc') as string },
-    { page: 'creative', icon: 'fa-lightbulb', title: t('creativeStudioTitle') as string, desc: t('creativeStudioDesc') as string },
-    { page: 'stylist', icon: 'fa-tshirt', title: t('stylistStudioTitle') as string, desc: t('stylistStudioDesc') as string },
-    { page: 'architect', icon: 'fa-drafting-compass', title: t('architectStudioTitle') as string, desc: t('architectStudioDesc') as string },
-    { page: 'video', icon: 'fa-video', title: t('videoStudioTitle') as string, desc: t('videoStudioDesc') as string },
-    { page: 'magic', icon: 'fa-wand-magic-sparkles', title: t('magicStudioTitle') as string, desc: t('magicStudioDesc') as string },
-    { page: 'background', icon: 'fa-eraser', title: t('backgroundStudioTitle') as string, desc: t('backgroundStudioDesc') as string },
+    { page: 'pose', icon: 'fa-street-view', title: t('poseStudioTitle'), desc: t('poseStudioDesc') },
+    { page: 'prop', icon: 'fa-magic', title: t('propFusionTitle'), desc: t('propFusionDesc') },
+    { page: 'design', icon: 'fa-palette', title: t('designStudioTitle'), desc: t('designStudioDesc') },
+    { page: 'creative', icon: 'fa-lightbulb', title: t('creativeStudioTitle'), desc: t('creativeStudioDesc') },
+    { page: 'stylist', icon: 'fa-tshirt', title: t('stylistStudioTitle'), desc: t('stylistStudioDesc') },
+    { page: 'architect', icon: 'fa-drafting-compass', title: t('architectStudioTitle'), desc: t('architectStudioDesc') },
+    { page: 'video', icon: 'fa-video', title: t('videoStudioTitle'), desc: t('videoStudioDesc') },
+    { page: 'magic', icon: 'fa-wand-magic-sparkles', title: t('magicStudioTitle'), desc: t('magicStudioDesc') },
+    { page: 'background', icon: 'fa-eraser', title: t('backgroundStudioTitle'), desc: t('backgroundStudioDesc') },
   ];
 
   return (
@@ -1385,8 +1240,8 @@ const HomePage = ({ onNavigate }: {onNavigate: (page: Page) => void}) => {
 };
 
 const PoseStudio = ({ onBack }: { onBack: () => void }) => {
-    const { t, language, openApiKeyModal } = useAppContext();
-    const { ai, isKeySet } = useApi();
+    const { t, language } = useAppContext();
+    const { ai } = useApi();
     const [characterImage, setCharacterImage] = useState<UploadedImage | null>(null);
     const [poseImage, setPoseImage] = useState<UploadedImage | null>(null);
     const [positivePrompt, setPositivePrompt] = useState('');
@@ -1407,8 +1262,8 @@ const PoseStudio = ({ onBack }: { onBack: () => void }) => {
     const isBeautyAvailable = useMemo(() => PRESETS[preset].beauty === 'on', [preset]);
 
     const handleSubmit = async () => {
-        if (!isKeySet || !ai) {
-            openApiKeyModal();
+        if (!ai) {
+            setError(t('serviceUnavailable'));
             return;
         }
         if (!characterImage || !poseImage) {
@@ -1574,8 +1429,8 @@ const PoseStudio = ({ onBack }: { onBack: () => void }) => {
 };
 
 const AIStylist = ({ onBack }: {onBack: () => void}) => {
-    const { t, language, openApiKeyModal } = useAppContext();
-    const { ai, isKeySet } = useApi();
+    const { t, language } = useAppContext();
+    const { ai } = useApi();
     const [modelImage, setModelImage] = useState<UploadedImage | null>(null);
     const [outfitImage, setOutfitImage] = useState<UploadedImage | null>(null);
     const [positivePrompt, setPositivePrompt] = useState(() => t('stylistPositiveDefault'));
@@ -1616,8 +1471,8 @@ const AIStylist = ({ onBack }: {onBack: () => void}) => {
     const isBeautyAvailable = useMemo(() => preset === 'auto-preset' || PRESETS[preset]?.beauty === 'on', [preset]);
     
     const handleSubmit = async () => {
-        if (!isKeySet || !ai) {
-            openApiKeyModal();
+        if (!ai) {
+            setError(t('serviceUnavailable'));
             return;
         }
         if (!modelImage || !outfitImage) {
@@ -1819,8 +1674,8 @@ const AIStylist = ({ onBack }: {onBack: () => void}) => {
 };
 
 const PropFusion = ({ onBack }: {onBack: () => void}) => {
-    const { t, language, openApiKeyModal } = useAppContext();
-    const { ai, isKeySet } = useApi();
+    const { t, language } = useAppContext();
+    const { ai } = useApi();
     const [characterImage, setCharacterImage] = useState<UploadedImage | null>(null);
     const [propImage, setPropImage] = useState<UploadedImage | null>(null);
     const [positivePrompt, setPositivePrompt] = useState(() => t('propFusionPositiveDefault'));
@@ -1857,8 +1712,8 @@ const PropFusion = ({ onBack }: {onBack: () => void}) => {
     const isBeautyAvailable = useMemo(() => PRESETS[preset].beauty === 'on', [preset]);
 
     const handleSubmit = async () => {
-        if (!isKeySet || !ai) {
-            openApiKeyModal();
+        if (!ai) {
+            setError(t('serviceUnavailable'));
             return;
         }
         if (!characterImage || !propImage) {
@@ -1978,8 +1833,8 @@ const PropFusion = ({ onBack }: {onBack: () => void}) => {
 };
 
 const AIDesign = ({ onBack }: {onBack: () => void}) => {
-    const { t, language, openApiKeyModal } = useAppContext();
-    const { ai, isKeySet } = useApi();
+    const { t, language } = useAppContext();
+    const { ai } = useApi();
     const [subjectImage, setSubjectImage] = useState<UploadedImage | null>(null);
     const [backgroundImage, setBackgroundImage] = useState<UploadedImage | null>(null);
     const [positivePrompt, setPositivePrompt] = useState(() => t('designPositiveDefault'));
@@ -2016,8 +1871,8 @@ const AIDesign = ({ onBack }: {onBack: () => void}) => {
     const isBeautyAvailable = useMemo(() => PRESETS[preset].beauty === 'on', [preset]);
 
     const handleSubmit = async () => {
-        if (!isKeySet || !ai) {
-            openApiKeyModal();
+        if (!ai) {
+            setError(t('serviceUnavailable'));
             return;
         }
         if (!subjectImage || !backgroundImage) {
@@ -2137,8 +1992,8 @@ const AIDesign = ({ onBack }: {onBack: () => void}) => {
 };
 
 const AICreative = ({ onBack }: {onBack: () => void}) => {
-    const { t, language, openApiKeyModal } = useAppContext();
-    const { ai, isKeySet } = useApi();
+    const { t, language } = useAppContext();
+    const { ai } = useApi();
     const [positivePrompt, setPositivePrompt] = useState('');
     const [negativePrompt, setNegativePrompt] = useState(() => t('creativeNegativeDefault'));
     const [preset, setPreset] = useState('art-fantasy');
@@ -2168,8 +2023,8 @@ const AICreative = ({ onBack }: {onBack: () => void}) => {
     const isBeautyAvailable = useMemo(() => PRESETS[preset].beauty === 'on', [preset]);
     
     const handleSubmit = async () => {
-        if (!isKeySet || !ai) {
-            openApiKeyModal();
+        if (!ai) {
+            setError(t('serviceUnavailable'));
             return;
         }
         if (!positivePrompt.trim()) {
@@ -2274,8 +2129,8 @@ const AICreative = ({ onBack }: {onBack: () => void}) => {
 };
 
 const AIArchitect = ({ onBack }: {onBack: () => void}) => {
-    const { t, language, openApiKeyModal } = useAppContext();
-    const { ai, isKeySet } = useApi();
+    const { t, language } = useAppContext();
+    const { ai } = useApi();
     const [blueprintImage, setBlueprintImage] = useState<UploadedImage | null>(null);
     const [positivePrompt, setPositivePrompt] = useState(() => t('architectPositiveDefault'));
     const [negativePrompt, setNegativePrompt] = useState(() => t('architectNegativeDefault'));
@@ -2304,8 +2159,8 @@ const AIArchitect = ({ onBack }: {onBack: () => void}) => {
     }, [language, t]);
     
     const handleSubmit = async () => {
-        if (!isKeySet || !ai) {
-            openApiKeyModal();
+        if (!ai) {
+            setError(t('serviceUnavailable'));
             return;
         }
         if (!blueprintImage) {
@@ -2403,8 +2258,8 @@ const AIArchitect = ({ onBack }: {onBack: () => void}) => {
 };
 
 const AIVideoCreator = ({ onBack }: {onBack: () => void}) => {
-    const { t, language, openApiKeyModal } = useAppContext();
-    const { ai, isKeySet, apiKey } = useApi();
+    const { t, language } = useAppContext();
+    const { ai, apiKey } = useApi();
     const [mode, setMode] = useState<VideoGenerationMode>('text');
     const [prompt, setPrompt] = useState('');
     const [image, setImage] = useState<UploadedImage | null>(null);
@@ -2417,8 +2272,8 @@ const AIVideoCreator = ({ onBack }: {onBack: () => void}) => {
     const [loadingMessage, setLoadingMessage] = useState('');
 
     const handleSubmit = async () => {
-        if (!isKeySet || !ai) {
-            openApiKeyModal();
+        if (!ai) {
+            setError(t('serviceUnavailable'));
             return;
         }
         setError('');
@@ -2570,8 +2425,8 @@ const AIVideoCreator = ({ onBack }: {onBack: () => void}) => {
 };
 
 const AIMagic = ({ onBack }: {onBack: () => void}) => {
-    const { t, language, openApiKeyModal } = useAppContext();
-    const { ai, isKeySet } = useApi();
+    const { t, language } = useAppContext();
+    const { ai } = useApi();
     const [sourceImage, setSourceImage] = useState<UploadedImage | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [resultImage, setResultImage] = useState<string | null>(null);
@@ -2588,8 +2443,8 @@ const AIMagic = ({ onBack }: {onBack: () => void}) => {
     const [outputFormat, setOutputFormat] = useState<OutputFormat>('image/jpeg');
     
     const handleSubmit = async () => {
-        if (!isKeySet || !ai) {
-            openApiKeyModal();
+        if (!ai) {
+            setError(t('serviceUnavailable'));
             return;
         }
         if (!sourceImage) {
@@ -2759,16 +2614,16 @@ const AIMagic = ({ onBack }: {onBack: () => void}) => {
 };
 
 const AIBackground = ({ onBack }: {onBack: () => void}) => {
-    const { t, language, openApiKeyModal } = useAppContext();
-    const { ai, isKeySet } = useApi();
+    const { t, language } = useAppContext();
+    const { ai } = useApi();
     const [sourceImage, setSourceImage] = useState<UploadedImage | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [resultImage, setResultImage] = useState<string | null>(null);
     const [error, setError] = useState('');
 
     const handleSubmit = async () => {
-        if (!isKeySet || !ai) {
-            openApiKeyModal();
+        if (!ai) {
+            setError(t('serviceUnavailable'));
             return;
         }
         if (!sourceImage) {
@@ -2853,16 +2708,10 @@ const App = () => {
   const [page, setPage] = useState<Page>('home');
   const [theme, setTheme] = useState<Theme>('dark');
   const [language, setLanguage] = useState<Language>('vi');
-  const [isApiKeyModalOpen, setApiKeyModalOpen] = useState(false);
-  const { isKeySet } = useApi();
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme') || 'dark';
     setTheme(storedTheme as Theme);
-    
-    if (!isKeySet) {
-        setApiKeyModalOpen(true);
-    }
   }, []);
 
   useEffect(() => {
@@ -2889,7 +2738,6 @@ const App = () => {
     language,
     setLanguage,
     t,
-    openApiKeyModal: () => setApiKeyModalOpen(true),
   }), [theme, language, t]);
 
   const renderPage = () => {
@@ -2921,10 +2769,9 @@ const App = () => {
   return (
     <AppContext.Provider value={contextValue}>
       <div className={`min-h-screen flex flex-col bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text transition-colors duration-300`}>
-        <Header onApiKeyClick={() => setApiKeyModalOpen(true)} />
+        <Header />
         <main className="flex-grow">{renderPage()}</main>
         <Footer />
-        <ApiKeyModal isOpen={isApiKeyModalOpen} onClose={() => setApiKeyModalOpen(false)} />
       </div>
     </AppContext.Provider>
   );
