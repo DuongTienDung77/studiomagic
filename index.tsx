@@ -17,7 +17,7 @@ import {createRoot} from 'react-dom/client';
 import {GoogleGenAI, Modality} from '@google/genai';
 
 // --- CONSTANTS & TYPES ---
-type Page = 'home' | 'pose' | 'prop' | 'design' | 'creative' | 'stylist' | 'architect' | 'video' | 'magic' | 'background' | 'trendko';
+type Page = 'home' | 'pose' | 'prop' | 'design' | 'creative' | 'stylist' | 'architect' | 'video' | 'magic' | 'background' | 'trendko' | 'batch';
 type Theme = 'light' | 'dark';
 type Language = 'en' | 'vi';
 type ControlMode = 'Pose' | 'Edge' | 'Depth' | 'Creative';
@@ -455,6 +455,8 @@ const TRANSLATIONS = {
     backgroundStudioDesc: 'Remove the background from any image with one click.',
     trendkoTitle: 'AI Trend Maker',
     trendkoDesc: 'Create viral-style images with a single click.',
+    batchStudioTitle: 'Whisk Auto Studio',
+    batchStudioDesc: 'Batch generate images from a set of assets and prompts.',
     // Tool Page
     uploadCharacter: 'Upload Character',
     uploadPose: 'Upload Pose Sketch',
@@ -579,6 +581,22 @@ const TRANSLATIONS = {
     preserveIdentity: 'Preserve Identity',
     preserveIdentityDesc: "Strictly maintain the person's original facial features.",
     errorNoMagicFeature: 'Please select at least one magic feature.',
+    // Batch Tool
+    batchProject: 'Project Assets',
+    batchUploadAssets: 'Upload Project Assets',
+    batchPrompts: 'Enter Prompts (one per line)',
+    batchPromptsPlaceholder: 'A man and a woman looking at an ancient temple...\nA man hugging a woman from behind...',
+    batchStart: 'Start Generation',
+    batchStop: 'Stop Generation',
+    batchGenerating: 'Generating Batch...',
+    batchStopped: 'Stopped',
+    batchCompleted: 'Completed',
+    batchResults: 'Batch Generation Results',
+    batchNoAssets: 'Please upload at least one character and one background asset.',
+    batchNoPrompts: 'Please enter at least one prompt.',
+    batchCharacter: 'Character',
+    batchBackground: 'Background',
+    batchStyle: 'Style',
   },
   vi: {
     // General
@@ -613,6 +631,8 @@ const TRANSLATIONS = {
     backgroundStudioDesc: 'Xóa nền khỏi bất kỳ hình ảnh nào chỉ bằng một cú nhấp chuột.',
     trendkoTitle: 'AI Trend Maker',
     trendkoDesc: 'Tạo ảnh theo phong cách viral chỉ bằng một cú nhấp chuột.',
+    batchStudioTitle: 'Whisk Auto Studio',
+    batchStudioDesc: 'Tạo ảnh hàng loạt từ một bộ tài sản và prompts.',
     // Tool Page
     uploadCharacter: 'Tải lên Nhân vật',
     uploadPose: 'Tải lên Phác thảo Tư thế',
@@ -737,6 +757,22 @@ const TRANSLATIONS = {
     preserveIdentity: 'Giữ nguyên đường nét',
     preserveIdentityDesc: 'Tuyệt đối giữ lại các đặc điểm khuôn mặt gốc.',
     errorNoMagicFeature: 'Vui lòng chọn ít nhất một tính năng ma thuật.',
+    // Batch Tool
+    batchProject: 'Tài sản Dự án',
+    batchUploadAssets: 'Tải lên Tài sản Dự án',
+    batchPrompts: 'Nhập Prompts (mỗi prompt một dòng)',
+    batchPromptsPlaceholder: 'Người đàn ông và phụ nữ nhìn một ngôi đền cổ...\nNgười đàn ông ôm người phụ nữ từ phía sau...',
+    batchStart: 'Bắt đầu tạo ảnh',
+    batchStop: 'Dừng lại',
+    batchGenerating: 'Đang tạo hàng loạt...',
+    batchStopped: 'Đã dừng',
+    batchCompleted: 'Đã hoàn thành',
+    batchResults: 'Kết quả Tạo ảnh Hàng loạt',
+    batchNoAssets: 'Vui lòng tải lên ít nhất một tài sản nhân vật và một tài sản bối cảnh.',
+    batchNoPrompts: 'Vui lòng nhập ít nhất một prompt.',
+    batchCharacter: 'Nhân vật',
+    batchBackground: 'Bối cảnh',
+    batchStyle: 'Phong cách',
   },
 };
 
@@ -1087,17 +1123,17 @@ const ImageUploader = ({ onImageUpload, label }: {onImageUpload: (image: Uploade
     <div>
       <label className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{label}</label>
       <div
-        className={`image-upload-box w-full border-2 border-dashed border-light-border dark:border-dark-border rounded-lg text-center p-4 cursor-pointer hover:bg-light-bg dark:hover:bg-dark-bg ${!image ? 'h-48 flex flex-col items-center justify-center' : ''}`}
+        className={`image-upload-box w-full border-2 border-dashed border-light-border dark:border-dark-border rounded-lg text-center p-4 cursor-pointer hover:bg-light-bg dark:hover:bg-dark-bg ${!image ? 'h-32 flex flex-col items-center justify-center' : ''}`}
         onClick={handleClick}
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
       >
         {image ? (
-          <img src={image} alt="Uploaded preview" className="max-w-full h-auto rounded-md" />
+          <img src={image} alt="Uploaded preview" className="max-w-full h-auto rounded-md object-contain max-h-48" />
         ) : (
           <>
-            <i className="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
-            <p className="text-gray-500 dark:text-gray-400">{t('dragOrClick')}</p>
+            <i className="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">{t('dragOrClick')}</p>
           </>
         )}
       </div>
@@ -1269,6 +1305,7 @@ const ToggleSwitch = ({ id, checked, onChange, disabled, label, description }: T
 const HomePage = ({ onNavigate }: {onNavigate: (page: Page) => void}) => {
   const { t } = useAppContext();
   const tools = [
+    { page: 'batch', icon: 'fa-layer-group', title: t('batchStudioTitle'), desc: t('batchStudioDesc') },
     { page: 'trendko', icon: 'fa-fire', title: t('trendkoTitle'), desc: t('trendkoDesc') },
     { page: 'pose', icon: 'fa-street-view', title: t('poseStudioTitle'), desc: t('poseStudioDesc') },
     { page: 'prop', icon: 'fa-magic', title: t('propFusionTitle'), desc: t('propFusionDesc') },
@@ -2932,6 +2969,175 @@ const AIBackground = ({ onBack }: {onBack: () => void}) => {
     );
 };
 
+// --- NEW BATCH TOOL: Whisk Auto Studio ---
+type BatchResult = {
+    prompt: string;
+    imageUrl: string | null;
+    error: string | null;
+}
+
+const WhiskAutoStudio = ({ onBack }: { onBack: () => void }) => {
+    const { t, language } = useAppContext();
+    const { ai } = useApi();
+    
+    const [characterAsset, setCharacterAsset] = useState<UploadedImage | null>(null);
+    const [backgroundAsset, setBackgroundAsset] = useState<UploadedImage | null>(null);
+    const [prompts, setPrompts] = useState('');
+    const [aspectRatio, setAspectRatio] = useState('16:9');
+    
+    const [isLoading, setIsLoading] = useState(false);
+    const [isStopping, setIsStopping] = useState(false);
+    const [error, setError] = useState('');
+    const [results, setResults] = useState<BatchResult[]>([]);
+    const [progress, setProgress] = useState({ current: 0, total: 0 });
+    
+    const isRunningRef = useRef(false);
+
+    const handleStop = () => {
+        setIsStopping(true);
+        isRunningRef.current = false;
+    };
+
+    const handleSubmit = async () => {
+        const promptList = prompts.split('\n').filter(p => p.trim() !== '');
+
+        if (!characterAsset || !backgroundAsset) {
+            setError(t('batchNoAssets'));
+            return;
+        }
+        if (promptList.length === 0) {
+            setError(t('batchNoPrompts'));
+            return;
+        }
+        if (!ai) {
+            setError(t('serviceUnavailable'));
+            return;
+        }
+
+        setIsLoading(true);
+        setIsStopping(false);
+        setError('');
+        setResults([]);
+        setProgress({ current: 0, total: promptList.length });
+        isRunningRef.current = true;
+
+        for (let i = 0; i < promptList.length; i++) {
+            if (!isRunningRef.current) break;
+            
+            const currentPrompt = promptList[i];
+            setProgress({ current: i + 1, total: promptList.length });
+            
+            try {
+                let finalPromptText = currentPrompt;
+                if (language === 'vi' && currentPrompt.trim()) {
+                    finalPromptText = await callApi(() => translateText(ai, currentPrompt, 'Vietnamese', 'English'));
+                }
+                
+                const presetDirective = buildPresetDirective('special-wedding', { aspect: aspectRatio });
+                const finalPrompt = `
+                    ${presetDirective}\n\n
+                    [USER_PROMPT]
+                    instruction: Combine the character(s) from the first image with the scene from the second image, guided by the text prompt. Create a coherent, realistic, and high-quality photograph.
+                    Positive: ${finalPromptText}
+                    Negative: blurry, deformed, bad anatomy, ugly
+                    Output-Format: jpeg
+                `;
+                
+                const parts = [characterAsset.apiPayload, backgroundAsset.apiPayload, { text: finalPrompt }];
+                const imageUrl = await callApi(() => generateImage(ai, parts));
+                setResults(prev => [...prev, { prompt: currentPrompt, imageUrl, error: null }]);
+
+            } catch (err: any) {
+                console.error(`Failed to generate for prompt: "${currentPrompt}"`, err);
+                setResults(prev => [...prev, { prompt: currentPrompt, imageUrl: null, error: err.message || 'Generation failed' }]);
+            }
+        }
+        
+        setIsLoading(false);
+        setIsStopping(false);
+        isRunningRef.current = false;
+    };
+    
+
+    return (
+        <div className="p-4 md:p-8 animate-fade-in">
+            <button onClick={onBack} className="mb-6 flex items-center text-light-text dark:text-dark-text hover:underline">
+                <i className="fas fa-arrow-left mr-2"></i> {t('goBack')}
+            </button>
+
+            <div className="max-w-3xl mx-auto space-y-6">
+                 <div className="bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-md border border-light-border dark:border-dark-border space-y-4">
+                    <h3 className="text-xl font-bold">{t('batchProject')}</h3>
+                    <ImageUploader label={t('batchCharacter')} onImageUpload={setCharacterAsset} />
+                    <ImageUploader label={t('batchBackground')} onImageUpload={setBackgroundAsset} />
+                </div>
+                
+                <div className="bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-md border border-light-border dark:border-dark-border">
+                    <label htmlFor="batch-prompts" className="block text-sm font-bold mb-2">{t('batchPrompts')}</label>
+                    <textarea
+                        id="batch-prompts"
+                        value={prompts}
+                        onChange={e => setPrompts(e.target.value)}
+                        placeholder={t('batchPromptsPlaceholder')}
+                        rows={5}
+                        className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text"
+                        disabled={isLoading}
+                    />
+                </div>
+                
+                <div className="bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-md border border-light-border dark:border-dark-border">
+                    <label className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('aspectRatio')}</label>
+                    <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)} disabled={isLoading} className="w-full p-3 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text">
+                       {ASPECT_RATIOS.filter(r => r.value !== 'auto').map(ratio => (<option key={ratio.value} value={ratio.value}>{ratio.label[language as Language]}</option>))}
+                    </select>
+                </div>
+                
+                 {isLoading && (
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                        <div className="bg-light-primary dark:bg-dark-primary h-2.5 rounded-full" style={{ width: `${progress.total > 0 ? (progress.current / progress.total) * 100 : 0}%` }}></div>
+                    </div>
+                 )}
+                 <p className="text-center text-sm font-semibold h-5">
+                    {isLoading ? `${t('batchGenerating')} ${progress.current} / ${progress.total}` : (results.length > 0 && progress.current === progress.total ? `${t('batchCompleted')} ${results.length} / ${progress.total}` : '')}
+                 </p>
+                
+                <div className="flex gap-4">
+                    <button onClick={handleSubmit} disabled={isLoading} className="w-full btn-primary text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i className="fas fa-play mr-2"></i> {isLoading ? t('batchGenerating') : t('batchStart')}
+                    </button>
+                    <button onClick={handleStop} disabled={!isLoading || isStopping} className="w-full btn-danger text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+                       <i className="fas fa-stop mr-2"></i> {isStopping ? t('batchStopped') : t('batchStop')}
+                    </button>
+                </div>
+                {error && <p className="text-red-500 text-center font-semibold">{error}</p>}
+                
+                { (results.length > 0 || isLoading) && 
+                    <div className="bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-md border border-light-border dark:border-dark-border">
+                        <h3 className="text-xl font-bold mb-4">{t('batchResults')}</h3>
+                        <div className="space-y-6 max-h-[80vh] overflow-y-auto pr-2">
+                            {results.map((result, index) => (
+                                <div key={index} className="p-4 bg-light-bg dark:bg-dark-bg rounded-lg border border-light-border dark:border-dark-border">
+                                    <p className="font-semibold text-sm mb-2">#{index + 1}: {result.prompt}</p>
+                                    {result.imageUrl && (
+                                        <div>
+                                            <img src={result.imageUrl} alt={`Result for ${result.prompt}`} className="rounded-md w-full" />
+                                            <a href={result.imageUrl} download={`result-${index+1}.png`} className="w-full mt-2 btn-secondary text-white text-xs font-bold py-2 px-3 rounded-lg flex items-center justify-center">
+                                                <i className="fas fa-download mr-2"></i> {t('download')}
+                                            </a>
+                                        </div>
+                                    )}
+                                    {result.error && <p className="text-red-500 text-sm mt-2">Error: {result.error}</p>}
+                                </div>
+                            ))}
+                            {isLoading && results.length < progress.total && <div className="py-8"><Spinner /></div>}
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    );
+}
+
 const Footer = () => {
   return (
     <footer className="bg-light-surface dark:bg-dark-surface p-4 text-center border-t border-light-border dark:border-dark-border">
@@ -3002,6 +3208,8 @@ const App = () => {
         return <AIBackground onBack={() => setPage('home')} />;
       case 'trendko':
         return <AITrendMaker onBack={() => setPage('home')} />;
+      case 'batch':
+        return <WhiskAutoStudio onBack={() => setPage('home')} />;
       case 'home':
       default:
         return <HomePage onNavigate={handleNavigate} />;
