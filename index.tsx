@@ -342,37 +342,37 @@ const PRESETS: Record<string, StructuredPreset> = {
 };
 
 const TRENDS: Record<string, { label: {[key in Language]: string}; prompt: string; }> = {
-    '90s-yearbook': {
-        label: { en: '90s Yearbook', vi: 'Kỷ yếu thập niên 90' },
-        prompt: 'Create a 90s high school yearbook photo. Use a soft-focus, slightly grainy look with a classic mottled blue or gray studio background. The subject should have 90s fashion and hairstyles (e.g., feathered bangs, scrunchies, oversized sweaters). The lighting should be flat and professional-looking. The overall mood is nostalgic and slightly awkward.'
+    'action-figure': {
+        label: { en: 'Action Figure', vi: 'Mô hình Figure' },
+        prompt: 'Recreate the subject as a collectible action figure inside its original packaging. The packaging should be branded with a cool logo and design. The figure should look like it\'s made of plastic, with visible joints. The style is hyper-realistic, mimicking a photograph of a real toy product on a store shelf.'
     },
-    'gta-poster': {
-        label: { en: 'GTA Poster', vi: 'Poster GTA' },
-        prompt: 'Transform the image into the iconic Grand Theft Auto (GTA) video game cover art style. Use bold, black outlines, cel-shaded colors, and a highly stylized, graphic novel look. The composition should be dynamic, often with multiple panels or vignettes in the background. The mood is gritty, urban, and action-packed.'
+    'giant-monument': {
+        label: { en: 'Giant Monument', vi: 'Tượng đài khổng lồ' },
+        prompt: 'Transform the subject into a giant, majestic monument made of weathered stone or bronze. Place the monument in an epic location like a mountain top or a historic city square. The lighting should be dramatic, like at sunrise or sunset, to create long shadows and a powerful mood. The style is epic and photorealistic.'
     },
-    'anime-style': {
-        label: { en: '80s Anime', vi: 'Anime thập niên 80' },
-        prompt: 'Redraw the subject in a classic 1980s anime style. Features should be slightly simplified with large, expressive eyes. Use a vintage color palette with slightly muted or pastel tones. The background could be a simple, abstract pattern or a detailed cityscape. Add a film grain effect. The mood is nostalgic and retro.'
+    'giant-person': {
+        label: { en: 'Giant Person', vi: 'Người khổng lồ' },
+        prompt: 'Imagine the subject as a friendly giant walking through a tiny, miniature-scale city or landscape. The perspective should be from a low angle to emphasize their immense size. The overall mood is whimsical, awe-inspiring, and gentle, as if the giant is carefully exploring the small world below.'
     },
-    'claymation': {
-        label: { en: 'Claymation', vi: 'Hoạt hình đất sét' },
-        prompt: 'Recreate the subject as a claymation character (like Aardman Animations). The texture should look like real plasticine clay, complete with fingerprints and slight imperfections. The shapes should be soft and rounded. The lighting should be warm and give a sense of a physical miniature set. The mood is charming, handcrafted, and whimsical.'
+    'billboard-ad': {
+        label: { en: 'Billboard Ad', vi: 'Pano quảng cáo' },
+        prompt: 'Feature the subject on a massive, glowing billboard advertisement in a bustling, futuristic city at night, similar to Times Square or Neo-Tokyo. The city should be filled with neon lights, flying vehicles, and dense architecture. The ad on the billboard should look sleek and professional, as if for a major brand.'
     },
-    'pixel-art': {
-        label: { en: 'Pixel Art', vi: 'Nghệ thuật Pixel' },
-        prompt: 'Convert the image into detailed 16-bit pixel art. Use a limited but vibrant color palette. The lines should be clean and aliased (jagged). The result should look like a character sprite from a classic SNES or Sega Genesis game. The mood is retro and digital.'
+    'magazine-cover': {
+        label: { en: 'Magazine Cover', vi: 'Bìa tạp chí' },
+        prompt: 'Create a high-fashion magazine cover featuring the subject as the star. The cover should have a bold magazine title (e.g., "VOGUE", "GQ", "STYLE"), eye-catching headlines, and a barcode. The subject\'s photo should be styled professionally with studio lighting and a powerful pose. The mood is chic, modern, and glamorous.'
     },
-    'vintage-film': {
-        label: { en: 'Vintage Film', vi: 'Phim Cổ điển' },
-        prompt: 'Give the image the look of a vintage 1970s film photograph (like a faded Kodachrome or Ektachrome print). Colors should be warm, with slightly faded blacks and a soft yellow or red tint. Add a subtle film grain and maybe a light leak effect in a corner. The mood is nostalgic, warm, and analog.'
+    'tv-show': {
+        label: { en: 'TV Show', vi: 'Show truyền hình' },
+        prompt: 'Place the subject as a celebrity guest on a late-night talk show set. The scene should show them being interviewed, with studio lights, multiple cameras, a host\'s desk, and a blurred audience in the background. The subject could also be displayed on the large screens on the set. The mood is lively, professional, and exciting.'
     },
-    'fantasy-art': {
-        label: { en: 'Fantasy Art', vi: 'Nghệ thuật Fantasy' },
-        prompt: 'Reimagine the subject as a character in a high-fantasy digital painting. The style should be epic and painterly, with dramatic lighting (god rays, magical glows). The subject can be adorned with fantasy elements like elven ears, intricate armor, or flowing robes. The background should be a majestic landscape or mystical forest. The mood is epic, adventurous, and magical.'
+    'advertising-sign': {
+        label: { en: 'Advertising Sign', vi: 'Biển quảng cáo' },
+        prompt: 'Integrate the subject into a glowing, modern advertising light box on a city street or inside a subway station. The sign should be sleek and minimalist. The environment should be clean and contemporary, with reflections on wet pavement or polished floors. The mood is sophisticated and urban.'
     },
-    'cyberpunk': {
-        label: { en: 'Cyberpunk', vi: 'Cyberpunk' },
-        prompt: 'Transform the subject into a cyberpunk character. The setting should be a neon-lit, rainy, futuristic city street. The subject should have cybernetic enhancements, futuristic clothing, and glowing elements. The color palette should be dominated by blues, purples, and bright neons. The mood is dark, high-tech, and dystopian.'
+    'cyborg': {
+        label: { en: 'Cyborg', vi: 'Người máy' },
+        prompt: 'Transform the subject into a futuristic cyborg. Seamlessly blend their human features with intricate robotic parts, glowing wires, and metallic textures. The style should be inspired by cyberpunk art, with dramatic lighting, a dark and moody atmosphere, and a high level of detail in the mechanical components.'
     }
 };
 
