@@ -417,6 +417,16 @@ const TRENDS: Record<string, { label: {[key in Language]: string}; prompt: strin
     }
 };
 
+const VIETNAMESE_TEXT_INSTRUCTION = `
+[VIETNAMESE TEXT RENDERING INSTRUCTION]
+If the prompt requires rendering Vietnamese text within the image, you MUST adhere to the following rules to ensure correctness:
+1.  **Use correct Unicode:** Render all Vietnamese text using precomposed Unicode characters (NFC). For example, render "ấ" directly, not as "a" + "^" + "´".
+2.  **Correct Diacritics:** Ensure all diacritics (sắc, huyền, hỏi, ngã, nặng) are correctly placed on the main vowel of a syllable.
+3.  **Accurate Spelling:** Use correct modern Vietnamese spelling. Pay close attention to common words like "đẹp", "tuyệt vời", "cảm ơn".
+4.  **No Character Corruption:** Avoid rendering corrupted or incorrect characters from legacy encodings (like VNI or TCVN3). The final text must be clean, modern, and perfectly legible Vietnamese.
+The final output must display Vietnamese text with perfect, accurate diacritics.
+`;
+
 
 const buildPresetDirective = (presetId: string, overrides?: { beauty?: 'on' | 'off', aspect?: string }) => {
     const p = PRESETS[presetId];
@@ -1619,6 +1629,8 @@ const AITrendMaker = ({ onBack }: { onBack: () => void }) => {
                 const finalPrompt = `
                     [TASK] Create a viral trend image.
 
+                    ${language === 'vi' ? VIETNAMESE_TEXT_INSTRUCTION : ''}
+
                     [IDENTITY PRESERVATION]
                     **CRITICAL INSTRUCTION: ABSOLUTE LIKENESS REQUIRED**
                     You MUST strictly preserve the facial features, structure, and identity of the subject(s) from the input image(s). The person in the output MUST be perfectly and instantly recognizable as the same person from the input.
@@ -1830,6 +1842,8 @@ const LookbookStudio = ({ onBack }: { onBack: () => void }) => {
 
                  const finalPrompt = `
                     [TASK] Your task is to design a single, elegant lookbook page. This is page ${i + 1} of ${pagesToGenerate}.
+
+                    ${language === 'vi' ? VIETNAMESE_TEXT_INSTRUCTION : ''}
 
                     [IDENTITY PRESERVATION]
                     **CRITICAL INSTRUCTION: ABSOLUTE LIKENESS REQUIRED**
@@ -2911,6 +2925,7 @@ const AICreative = ({ onBack }: {onBack: () => void}) => {
             const presetDirective = buildPresetDirective(preset, { beauty, aspect: 'auto' });
             const finalPrompt = `
                 ${presetDirective}\n\n
+                ${language === 'vi' ? VIETNAMESE_TEXT_INSTRUCTION : ''}
                 [USER_PROMPT]
                 Positive: ${finalPositivePrompt}
             `;
