@@ -1158,6 +1158,7 @@ interface IAppContext {
         (key: StringTranslationKeys): string;
         (key: string): string | string[]; // Fallback for dynamic keys
     };
+    incrementGenerationCount: () => void;
 }
 const AppContext = createContext<IAppContext | null>(null);
 const useAppContext = () => {
@@ -1559,7 +1560,7 @@ const HomePage = ({ onNavigate }: {onNavigate: (page: Page) => void}) => {
 };
 
 const AITrendMaker = ({ onBack }: { onBack: () => void }) => {
-    const { t, language } = useAppContext();
+    const { t, language, incrementGenerationCount } = useAppContext();
     const { ai } = useApi();
     const [sourceImage, setSourceImage] = useState<UploadedImage | null>(null);
     const [secondarySourceImage, setSecondarySourceImage] = useState<UploadedImage | null>(null);
@@ -1658,6 +1659,10 @@ const AITrendMaker = ({ onBack }: { onBack: () => void }) => {
 
             const failedResults = settledResults.filter(res => res.status === 'rejected');
             
+            successfulResults.forEach(() => {
+                incrementGenerationCount();
+            });
+
             setResults(successfulResults);
 
             if (failedResults.length > 0) {
@@ -1776,7 +1781,7 @@ const AITrendMaker = ({ onBack }: { onBack: () => void }) => {
 
 
 const LookbookStudio = ({ onBack }: { onBack: () => void }) => {
-    const { t, language } = useAppContext();
+    const { t, language, incrementGenerationCount } = useAppContext();
     const { ai } = useApi();
     const [images, setImages] = useState<UploadedImage[]>([]);
     const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
@@ -1866,6 +1871,7 @@ const LookbookStudio = ({ onBack }: { onBack: () => void }) => {
                 
                 const imageUrl = await callApi(() => generateImage(ai, parts));
                 setResults(prev => [...prev, imageUrl]);
+                incrementGenerationCount();
             }
         } catch (err: any) {
              console.error(err);
@@ -1960,7 +1966,7 @@ const LookbookStudio = ({ onBack }: { onBack: () => void }) => {
 };
 
 const PoseStudio = ({ onBack }: { onBack: () => void }) => {
-    const { t, language } = useAppContext();
+    const { t, language, incrementGenerationCount } = useAppContext();
     const { ai } = useApi();
     const [characterImage, setCharacterImage] = useState<UploadedImage | null>(null);
     const [poseImage, setPoseImage] = useState<UploadedImage | null>(null);
@@ -2019,6 +2025,7 @@ const PoseStudio = ({ onBack }: { onBack: () => void }) => {
             ];
             const generatedImage = await callApi(() => generateImage(ai, parts));
             setResultImage(generatedImage);
+            incrementGenerationCount();
         } catch (err: any) {
             console.error(err);
             setError(err.message || t('error'));
@@ -2149,7 +2156,7 @@ const PoseStudio = ({ onBack }: { onBack: () => void }) => {
 };
 
 const AIStylist = ({ onBack }: {onBack: () => void}) => {
-    const { t, language } = useAppContext();
+    const { t, language, incrementGenerationCount } = useAppContext();
     const { ai } = useApi();
     const [modelImage, setModelImage] = useState<UploadedImage | null>(null);
     const [outfitImage, setOutfitImage] = useState<UploadedImage | null>(null);
@@ -2279,6 +2286,7 @@ const AIStylist = ({ onBack }: {onBack: () => void}) => {
             ];
             const generatedImage = await callApi(() => generateImage(ai, parts));
             setResultImage(generatedImage);
+            incrementGenerationCount();
         } catch (err: any) {
             console.error(err);
             setError(err.message || t('error'));
@@ -2394,7 +2402,7 @@ const AIStylist = ({ onBack }: {onBack: () => void}) => {
 };
 
 const PropFusion = ({ onBack }: {onBack: () => void}) => {
-    const { t, language } = useAppContext();
+    const { t, language, incrementGenerationCount } = useAppContext();
     const { ai } = useApi();
     const [characterImage, setCharacterImage] = useState<UploadedImage | null>(null);
     const [propImage, setPropImage] = useState<UploadedImage | null>(null);
@@ -2464,6 +2472,7 @@ const PropFusion = ({ onBack }: {onBack: () => void}) => {
             const parts = [characterImage.apiPayload, propImage.apiPayload, { text: finalPrompt }];
             const generatedImage = await callApi(() => generateImage(ai, parts));
             setResultImage(generatedImage);
+            incrementGenerationCount();
         } catch (err: any) {
             console.error(err);
             setError(err.message || t('error'));
@@ -2553,7 +2562,7 @@ const PropFusion = ({ onBack }: {onBack: () => void}) => {
 };
 
 const ProductPlacement = ({ onBack }: {onBack: () => void}) => {
-    const { t, language } = useAppContext();
+    const { t, language, incrementGenerationCount } = useAppContext();
     const { ai } = useApi();
     const [sceneImage, setSceneImage] = useState<UploadedImage | null>(null);
     const [productImage, setProductImage] = useState<UploadedImage | null>(null);
@@ -2616,6 +2625,7 @@ const ProductPlacement = ({ onBack }: {onBack: () => void}) => {
             const parts = [sceneImage.apiPayload, productImage.apiPayload, { text: finalPrompt }];
             const generatedImage = await callApi(() => generateImage(ai, parts));
             setResultImage(generatedImage);
+            incrementGenerationCount();
         } catch (err: any) {
             console.error(err);
             setError(err.message || t('error'));
@@ -2687,7 +2697,7 @@ const ProductPlacement = ({ onBack }: {onBack: () => void}) => {
 };
 
 const AIDesign = ({ onBack }: {onBack: () => void}) => {
-    const { t, language } = useAppContext();
+    const { t, language, incrementGenerationCount } = useAppContext();
     const { ai } = useApi();
     const [subjectImage, setSubjectImage] = useState<UploadedImage | null>(null);
     const [backgroundImage, setBackgroundImage] = useState<UploadedImage | null>(null);
@@ -2757,6 +2767,7 @@ const AIDesign = ({ onBack }: {onBack: () => void}) => {
             const parts = [subjectImage.apiPayload, backgroundImage.apiPayload, { text: finalPrompt }];
             const generatedImage = await callApi(() => generateImage(ai, parts));
             setResultImage(generatedImage);
+            incrementGenerationCount();
         } catch (err: any) {
             console.error(err);
             setError(err.message || t('error'));
@@ -2846,7 +2857,7 @@ const AIDesign = ({ onBack }: {onBack: () => void}) => {
 };
 
 const AICreative = ({ onBack }: {onBack: () => void}) => {
-    const { t, language } = useAppContext();
+    const { t, language, incrementGenerationCount } = useAppContext();
     const { ai } = useApi();
     const [positivePrompt, setPositivePrompt] = useState('');
     const [negativePrompt, setNegativePrompt] = useState(() => t('creativeNegativeDefault'));
@@ -2907,6 +2918,7 @@ const AICreative = ({ onBack }: {onBack: () => void}) => {
             
             const generatedImage = await callApi(() => generateImageFromText(ai, finalPrompt, finalNegativePrompt, config));
             setResultImage(generatedImage);
+            incrementGenerationCount();
         } catch (err: any) {
             console.error(err);
             setError(err.message || t('error'));
@@ -2983,7 +2995,7 @@ const AICreative = ({ onBack }: {onBack: () => void}) => {
 };
 
 const AIArchitect = ({ onBack }: {onBack: () => void}) => {
-    const { t, language } = useAppContext();
+    const { t, language, incrementGenerationCount } = useAppContext();
     const { ai } = useApi();
     const [blueprintImage, setBlueprintImage] = useState<UploadedImage | null>(null);
     const [positivePrompt, setPositivePrompt] = useState(() => t('architectPositiveDefault'));
@@ -3045,6 +3057,7 @@ const AIArchitect = ({ onBack }: {onBack: () => void}) => {
             const parts = [blueprintImage.apiPayload, { text: finalPrompt }];
             const generatedImage = await callApi(() => generateImage(ai, parts));
             setResultImage(generatedImage);
+            incrementGenerationCount();
         } catch (err: any) {
             console.error(err);
             setError(err.message || t('error'));
@@ -3112,7 +3125,7 @@ const AIArchitect = ({ onBack }: {onBack: () => void}) => {
 };
 
 const AIVideoCreator = ({ onBack }: {onBack: () => void}) => {
-    const { t, language } = useAppContext();
+    const { t, language, incrementGenerationCount } = useAppContext();
     const { ai, apiKey } = useApi();
     const [mode, setMode] = useState<VideoGenerationMode>('text');
     const [prompt, setPrompt] = useState('');
@@ -3171,6 +3184,7 @@ const AIVideoCreator = ({ onBack }: {onBack: () => void}) => {
 
             const videoUrl = await callApi(() => generateVideo(ai, apiKey, finalPrompt, imageForVideoPayload, quality, aspectRatio));
             setResultVideo(videoUrl);
+            incrementGenerationCount();
         } catch (err: any) {
             console.error(err);
             setError(err.message || t('error'));
@@ -3279,7 +3293,7 @@ const AIVideoCreator = ({ onBack }: {onBack: () => void}) => {
 };
 
 const AIMagic = ({ onBack }: {onBack: () => void}) => {
-    const { t, language } = useAppContext();
+    const { t, language, incrementGenerationCount } = useAppContext();
     const { ai } = useApi();
     const [sourceImage, setSourceImage] = useState<UploadedImage | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -3352,6 +3366,7 @@ const AIMagic = ({ onBack }: {onBack: () => void}) => {
             const parts = [sourceImage.apiPayload, { text: finalPrompt }];
             const generatedImage = await callApi(() => generateImage(ai, parts));
             setResultImage(generatedImage);
+            incrementGenerationCount();
         } catch (err: any) {
             console.error(err);
             setError(err.message || t('error'));
@@ -3458,7 +3473,7 @@ const AIMagic = ({ onBack }: {onBack: () => void}) => {
 };
 
 const UpscaleAI = ({ onBack }: {onBack: () => void}) => {
-    const { t, language } = useAppContext();
+    const { t, language, incrementGenerationCount } = useAppContext();
     const { ai } = useApi();
     const [sourceImage, setSourceImage] = useState<UploadedImage | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -3554,6 +3569,7 @@ Execute the pipeline and return only the final, upscaled image.
             const parts = [sourceImage.apiPayload, { text: finalPrompt }];
             const generatedImage = await callApi(() => generateImage(ai, parts));
             setResultImage(generatedImage);
+            incrementGenerationCount();
         } catch (err: any) {
             console.error(err);
             setError(err.message || t('error'));
@@ -3655,7 +3671,7 @@ Execute the pipeline and return only the final, upscaled image.
 };
 
 const AIBackground = ({ onBack }: {onBack: () => void}) => {
-    const { t, language } = useAppContext();
+    const { t, language, incrementGenerationCount } = useAppContext();
     const { ai } = useApi();
     const [sourceImage, setSourceImage] = useState<UploadedImage | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -3695,6 +3711,7 @@ const AIBackground = ({ onBack }: {onBack: () => void}) => {
             const parts = [sourceImage.apiPayload, { text: finalPrompt }];
             const generatedImage = await callApi(() => generateImage(ai, parts));
             setResultImage(generatedImage);
+            incrementGenerationCount();
         } catch (err: any) {
             console.error(err);
             setError(err.message || t('error'));
@@ -3741,7 +3758,7 @@ type BatchResult = {
 }
 
 const WhiskAutoStudio = ({ onBack }: { onBack: () => void }) => {
-    const { t, language } = useAppContext();
+    const { t, language, incrementGenerationCount } = useAppContext();
     const { ai } = useApi();
     
     const [characterAsset, setCharacterAsset] = useState<UploadedImage | null>(null);
@@ -3810,6 +3827,7 @@ const WhiskAutoStudio = ({ onBack }: { onBack: () => void }) => {
                 const parts = [characterAsset.apiPayload, backgroundAsset.apiPayload, { text: finalPrompt }];
                 const imageUrl = await callApi(() => generateImage(ai, parts));
                 setResults(prev => [...prev, { prompt: currentPrompt, imageUrl, error: null }]);
+                incrementGenerationCount();
 
             } catch (err: any) {
                 console.error(`Failed to generate for prompt: "${currentPrompt}"`, err);
@@ -3966,6 +3984,7 @@ const App = () => {
   const [theme, setTheme] = useState<Theme>('dark');
   const [language, setLanguage] = useState<Language>('vi');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [generationCount, setGenerationCount] = useState(0);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme') || 'dark';
@@ -3975,12 +3994,23 @@ const App = () => {
     if (savedAuth === 'true') {
       setIsAuthenticated(true);
     }
+    
+    const savedCount = parseInt(localStorage.getItem('generation_count') || '0', 10);
+    setGenerationCount(savedCount);
   }, []);
 
   useEffect(() => {
     document.documentElement.className = theme;
     localStorage.setItem('theme', theme);
   }, [theme]);
+  
+  const incrementGenerationCount = useCallback(() => {
+    setGenerationCount(prevCount => {
+        const newCount = prevCount + 1;
+        localStorage.setItem('generation_count', newCount.toString());
+        return newCount;
+    });
+  }, []);
   
   // Fix: Update 't' function to be correctly typed with an overloaded signature.
   const t = useCallback(
@@ -3993,6 +4023,8 @@ const App = () => {
   
   const handleAuthenticationSuccess = () => {
     localStorage.setItem('app_authenticated', 'true');
+    localStorage.setItem('generation_count', '0');
+    setGenerationCount(0);
     setIsAuthenticated(true);
   };
 
@@ -4006,7 +4038,8 @@ const App = () => {
     language,
     setLanguage,
     t,
-  }), [theme, language, t]);
+    incrementGenerationCount,
+  }), [theme, language, t, incrementGenerationCount]);
 
   const renderPage = () => {
     switch (page) {
@@ -4044,7 +4077,7 @@ const App = () => {
     }
   };
   
-  if (!isAuthenticated) {
+  if (!isAuthenticated && generationCount >= 3) {
     return (
       <AppContext.Provider value={contextValue}>
         <SecretCodeScreen onSuccess={handleAuthenticationSuccess} />
