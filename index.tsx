@@ -17,7 +17,7 @@ import {createRoot} from 'react-dom/client';
 import {GoogleGenAI, Modality} from '@google/genai';
 
 // --- CONSTANTS & TYPES ---
-type Page = 'home' | 'pose' | 'prop' | 'design' | 'creative' | 'stylist' | 'architect' | 'video' | 'magic' | 'background' | 'trendko' | 'batch' | 'lookbook' | 'placement';
+type Page = 'home' | 'pose' | 'prop' | 'design' | 'creative' | 'stylist' | 'architect' | 'video' | 'magic' | 'background' | 'trendko' | 'batch' | 'lookbook' | 'placement' | 'upscale';
 type Theme = 'light' | 'dark';
 type Language = 'en' | 'vi';
 type ControlMode = 'Pose' | 'Edge' | 'Depth' | 'Creative';
@@ -47,6 +47,39 @@ interface StructuredPreset {
   aspect?: string;
   beauty: 'on' | 'off';
 }
+
+const UPSCALE_FORMULA = {
+  skin_library: {
+    "Beauty_Smooth": {
+      "name": "Beauty Smooth – Flawless Commercial",
+      "skin_render": "Her skin is smooth and radiant, with flawless texture. Any blemishes, scars or pores are invisible under beauty light and gentle cinematic grading. The surface reflects soft light evenly, with glass-skin shine and creamy finish."
+    },
+    "High_Fidelity_Realism": {
+      "name": "High-Fidelity Realism – Cinematic Natural Detail",
+      "skin_render": "Her skin has ultra-high fidelity cinematic rendering with soft light diffusion. Subtle peach fuzz and delicate micro-textures are preserved under close-up focus, giving natural realism without visible blemishes. Surface reflectivity is balanced: soft glow with gentle sheen on highlights, avoiding over-plastic shine. Tonal gradients transition smoothly, showing lifelike depth and softness, maintaining a natural creamy radiance."
+    },
+    "Hybrid_Luxury": {
+      "name": "Hybrid Luxury – Glossy but Natural",
+      "skin_render": "Her skin is luminous and radiant with luxury cinematic grading, combining flawless smoothness with subtle micro-textures. Under soft diffusion light, fine peach fuzz is preserved, adding realism without imperfections. The surface reflects a creamy glow with balanced highlights, avoiding plastic shine. This rendering merges glossy commercial beauty aesthetics with the authenticity of high-fidelity cinematic portraiture."
+    }
+  },
+  "upscale_pipeline": {
+    "explain": "Enable multi-stage super-resolution pipeline with face-preserve. First upscale 2x for detail recovery, then cascade 4x for texture fidelity, and finalize at 8x for ultra-sharp output.",
+    "rules": [
+      "Stage 1: Upscale 2x – recover soft details (skin gradients, hair flow, light diffusion).",
+      "Stage 2: Upscale 4x – enhance micro textures (peach fuzz, fabric weave, jewelry shine).",
+      "Stage 3: Upscale 8x – finalize ultra-sharp 8K output while preserving cinematic tone.",
+      "Always enable face-preserve to avoid distortion of characters.",
+      "Do not separate audio layer when upscaling for video projects."
+    ],
+    "render_block": {
+      "resolution": "8K",
+      "frame_rate": "24fps",
+      "upscale": "Enable multi-stage super-resolution pipeline with face-preserve. First upscale 2x for detail recovery, then cascade 4x for texture fidelity, and finalize at 8x for ultra-sharp output. Preserve micro details such as peach fuzz and fabric texture. Do not separate audio layer when upscaling."
+    }
+  }
+};
+
 
 const PRESET_CONTROLLER = {
     quality_block: 'ultra-high detail, professional grade, 8K native resolution (8192x8192 pixels), ACES-like cinematic tone mapping, maximum detail preservation, no upscaling. The final output must be extremely high-resolution.',
@@ -458,7 +491,9 @@ const TRANSLATIONS = {
     videoStudioTitle: 'AI Video Create',
     videoStudioDesc: 'Create stunning videos from text or images.',
     magicStudioTitle: 'AI Magic',
-    magicStudioDesc: 'Beautify, restore old photos, and upscale with one click.',
+    magicStudioDesc: 'Beautify & restore old photos with one click.',
+    upscaleStudioTitle: 'Upscale AI',
+    upscaleStudioDesc: 'Upgrade images to a higher resolution, adding realistic details and textures.',
     backgroundStudioTitle: 'AI Background Remover',
     backgroundStudioDesc: 'Remove the background from any image with one click.',
     trendkoTitle: 'AI Trend Maker',
@@ -574,9 +609,12 @@ const TRANSLATIONS = {
     architectFeatures: ['Transform 2D sketches into realistic 3D renders.', 'Supports interior and exterior designs.', 'Cinematic lighting and high-quality materials.'],
     architectGuide: ['1. Upload a blueprint or architectural sketch.', '2. Choose an appropriate preset (e.g., Exterior, Interior).', '3. Use prompts to specify materials, time of day, and mood.', '4. (Optional) Use negative prompts to avoid cartoony looks.', '5. Click "Generate"!'],
     architectTips: ['High-contrast, clean line drawings work best.', 'Specify materials like "oak wood floor", "concrete walls".', 'For lighting, try prompts like "golden hour lighting" or "soft morning light".'],
-    magicFeatures: ['One-click photo enhancement.', 'Combine multiple effects like beautify, restore, and upscale.', "Advanced AI ensures the subject's identity is perfectly preserved."],
+    magicFeatures: ['One-click photo enhancement.', 'Combine multiple effects like beautify and restore.', "Advanced AI ensures the subject's identity is perfectly preserved."],
     magicGuide: ['1. Upload the image you want to edit.', '2. Toggle the features you want to apply (e.g., Beautify, Restore).', '3. Ensure "Preserve Identity" is on for portraits.', '4. Click "Generate" to see the magic!'],
-    magicTips: ['Works best with one primary subject.', 'The "Restore" feature is powerful for scanned family photos.', 'Upscaling can significantly increase detail, but may take a moment longer.'],
+    magicTips: ['Works best with one primary subject.', 'The "Restore" feature is powerful for scanned family photos.', 'Combine features for a complete photo makeover.'],
+    upscaleFeatures: ['Dramatically increase image resolution (4x or more).', 'Generates new, photorealistic details and textures.', 'Perfect for preparing images for print or high-res displays.'],
+    upscaleGuide: ['1. Upload the image you want to upscale.', '2. (Optional) Adjust aspect ratio or output format.', '3. Click "Generate" to start the process.'],
+    upscaleTips: ['Start with the highest quality source image you have for best results.', 'The process can take longer than other edits due to intensive detail generation.', 'The resulting file size will be significantly larger.'],
     backgroundFeatures: ['One-click background removal.', 'Outputs high-resolution PNG with transparency.', 'Perfect for product photos, portraits, and more.'],
     backgroundGuide: ['1. Upload the image you want to edit.', '2. Click "Generate"!', '3. Download your image with a transparent background.'],
     backgroundTips: ['Use images with a clear subject for the best results.', 'The output is a PNG, perfect for placing on new backgrounds.', 'High-resolution input images will produce high-resolution outputs.'],
@@ -609,11 +647,15 @@ const TRANSLATIONS = {
     magicBeautifyDesc: 'Smooth skin, remove acne and blemishes.',
     magicRestore: 'Restore Old Photo',
     magicRestoreDesc: 'Fix blur, scratches, and color fading.',
-    magicUpscale: 'Upscale Resolution',
-    magicUpscaleDesc: 'Increase image size and sharpness.',
     preserveIdentity: 'Preserve Identity',
     preserveIdentityDesc: "Strictly maintain the person's original facial features.",
-    errorNoMagicFeature: 'Please select at least one magic feature.',
+    errorNoMagicFeature: 'Please select at least one magic feature or enter a prompt.',
+    // Upscale Tool
+    upscaleLevelLabel: 'Upscale Level',
+    upscaleSkinStyleLabel: 'Skin Rendering Style',
+    skinStyle_Beauty_Smooth: 'Beauty Smooth (Flawless Commercial)',
+    skinStyle_High_Fidelity_Realism: 'High-Fidelity (Cinematic Natural)',
+    skinStyle_Hybrid_Luxury: 'Hybrid Luxury (Glossy & Natural)',
     // Batch Tool
     batchProject: 'Project Assets',
     batchUploadAssets: 'Upload Project Assets',
@@ -659,7 +701,9 @@ const TRANSLATIONS = {
     videoStudioTitle: 'Tạo Video AI',
     videoStudioDesc: 'Tạo video tuyệt đẹp từ văn bản hoặc hình ảnh.',
     magicStudioTitle: 'AI Ma Thuật',
-    magicStudioDesc: 'Làm đẹp, phục chế ảnh cũ và nâng cấp độ phân giải.',
+    magicStudioDesc: 'Làm đẹp & phục chế ảnh cũ chỉ bằng một cú nhấp chuột.',
+    upscaleStudioTitle: 'AI Nâng Cấp',
+    upscaleStudioDesc: 'Nâng cấp hình ảnh lên độ phân giải cao hơn, thêm các chi tiết và kết cấu chân thực.',
     backgroundStudioTitle: 'Xóa Nền AI',
     backgroundStudioDesc: 'Xóa nền khỏi bất kỳ hình ảnh nào chỉ bằng một cú nhấp chuột.',
     trendkoTitle: 'AI Trend Maker',
@@ -775,9 +819,12 @@ const TRANSLATIONS = {
     architectFeatures: ['Biến phác thảo 2D thành ảnh render 3D chân thực.', 'Hỗ trợ thiết kế nội thất và ngoại thất.', 'Ánh sáng điện ảnh và vật liệu chất lượng cao.'],
     architectGuide: ['1. Tải lên bản thiết kế hoặc phác thảo kiến trúc.', '2. Chọn một preset phù hợp (VD: Ngoại thất, Nội thất).', '3. Dùng prompt để chỉ định vật liệu, thời gian trong ngày và tâm trạng.', '4. (Tùy chọn) Dùng prompt tiêu cực để tránh hình ảnh trông như hoạt hình.', '5. Nhấn "Tạo ảnh"!'],
     architectTips: ['Bản vẽ có đường nét sạch, độ tương phản cao hoạt động tốt nhất.', 'Chỉ định vật liệu như "sàn gỗ sồi", "tường bê tông".', 'Về ánh sáng, hãy thử các prompt như "ánh sáng giờ vàng" hoặc "ánh sáng buổi sáng dịu nhẹ".'],
-    magicFeatures: ['Cải thiện ảnh chỉ với một cú nhấp.', 'Kết hợp nhiều hiệu ứng như làm đẹp, phục chế, và nâng cấp.', 'AI tiên tiến đảm bảo nhận dạng của chủ thể được bảo toàn hoàn hảo.'],
+    magicFeatures: ['Cải thiện ảnh chỉ với một cú nhấp.', 'Kết hợp nhiều hiệu ứng như làm đẹp và phục chế.', 'AI tiên tiến đảm bảo nhận dạng của chủ thể được bảo toàn hoàn hảo.'],
     magicGuide: ['1. Tải lên ảnh bạn muốn chỉnh sửa.', '2. Bật các tính năng bạn muốn áp dụng (VD: Làm đẹp, Phục chế).', '3. Đảm bảo "Giữ nguyên đường nét" được bật cho ảnh chân dung.', '4. Nhấn "Tạo ảnh" để xem điều kỳ diệu!'],
-    magicTips: ['Hoạt động tốt nhất với ảnh có một chủ thể chính.', 'Tính năng "Phục chế" rất mạnh mẽ cho ảnh gia đình được quét.', 'Nâng cấp có thể tăng chi tiết đáng kể, nhưng có thể mất thêm chút thời gian.'],
+    magicTips: ['Hoạt động tốt nhất với ảnh có một chủ thể chính.', 'Tính năng "Phục chế" rất mạnh mẽ cho ảnh gia đình được quét.', 'Kết hợp các tính năng để tân trang ảnh toàn diện.'],
+    upscaleFeatures: ['Tăng đáng kể độ phân giải ảnh (gấp 4 lần hoặc hơn).', 'Tạo ra các chi tiết và kết cấu mới, siêu thực.', 'Hoàn hảo để chuẩn bị ảnh cho in ấn hoặc hiển thị độ phân giải cao.'],
+    upscaleGuide: ['1. Tải lên hình ảnh bạn muốn nâng cấp.', '2. (Tùy chọn) Điều chỉnh tỷ lệ khung hình hoặc định dạng đầu ra.', '3. Nhấp vào "Tạo ảnh" để bắt đầu quá trình.'],
+    upscaleTips: ['Bắt đầu với ảnh gốc có chất lượng cao nhất để có kết quả tốt nhất.', 'Quá trình này có thể mất nhiều thời gian hơn các chỉnh sửa khác do phải tạo chi tiết phức tạp.', 'Kích thước tệp kết quả sẽ lớn hơn đáng kể.'],
     backgroundFeatures: ['Xóa nền chỉ bằng một cú nhấp chuột.', 'Xuất ra file PNG độ phân giải cao với nền trong suốt.', 'Hoàn hảo cho ảnh sản phẩm, chân dung, và nhiều hơn nữa.'],
     backgroundGuide: ['1. Tải lên hình ảnh bạn muốn chỉnh sửa.', '2. Nhấp vào "Tạo ảnh"!', '3. Tải xuống hình ảnh của bạn với nền trong suốt.'],
     backgroundTips: ['Sử dụng hình ảnh có chủ thể rõ ràng để có kết quả tốt nhất.', 'Đầu ra là file PNG, hoàn hảo để đặt trên nền mới.', 'Ảnh đầu vào có độ phân giải cao sẽ tạo ra ảnh đầu ra có độ phân giải cao.'],
@@ -810,11 +857,15 @@ const TRANSLATIONS = {
     magicBeautifyDesc: 'Làm mịn da, xóa mụn và khuyết điểm.',
     magicRestore: 'Phục chế ảnh cũ',
     magicRestoreDesc: 'Sửa ảnh mờ, vết xước, và màu bị phai.',
-    magicUpscale: 'Nâng cấp phân giải',
-    magicUpscaleDesc: 'Tăng kích thước và độ nét của ảnh.',
     preserveIdentity: 'Giữ nguyên đường nét',
     preserveIdentityDesc: 'Tuyệt đối giữ lại các đặc điểm khuôn mặt gốc.',
-    errorNoMagicFeature: 'Vui lòng chọn ít nhất một tính năng ma thuật.',
+    errorNoMagicFeature: 'Vui lòng chọn ít nhất một tính năng ma thuật hoặc nhập prompt.',
+    // Upscale Tool
+    upscaleLevelLabel: 'Mức độ Nâng cấp',
+    upscaleSkinStyleLabel: 'Phong cách Render Da',
+    skinStyle_Beauty_Smooth: 'Làm đẹp Mịn màng (Thương mại)',
+    skinStyle_High_Fidelity_Realism: 'Siêu chân thực (Tự nhiên Điện ảnh)',
+    skinStyle_Hybrid_Luxury: 'Sang trọng Lai (Bóng & Tự nhiên)',
     // Batch Tool
     batchProject: 'Tài sản Dự án',
     batchUploadAssets: 'Tải lên Tài sản Dự án',
@@ -1469,6 +1520,7 @@ const HomePage = ({ onNavigate }: {onNavigate: (page: Page) => void}) => {
     { page: 'stylist', icon: 'fa-tshirt', title: t('stylistStudioTitle'), desc: t('stylistStudioDesc') },
     { page: 'architect', icon: 'fa-drafting-compass', title: t('architectStudioTitle'), desc: t('architectStudioDesc') },
     { page: 'video', icon: 'fa-video', title: t('videoStudioTitle'), desc: t('videoStudioDesc') },
+    { page: 'upscale', icon: 'fa-search-plus', title: t('upscaleStudioTitle'), desc: t('upscaleStudioDesc') },
     { page: 'magic', icon: 'fa-wand-magic-sparkles', title: t('magicStudioTitle'), desc: t('magicStudioDesc') },
     { page: 'background', icon: 'fa-eraser', title: t('backgroundStudioTitle'), desc: t('backgroundStudioDesc') },
   ];
@@ -3226,7 +3278,6 @@ const AIMagic = ({ onBack }: {onBack: () => void}) => {
     
     const [doBeautify, setDoBeautify] = useState(false);
     const [doRestore, setDoRestore] = useState(false);
-    const [doUpscale, setDoUpscale] = useState(false);
     const [preserveIdentity, setPreserveIdentity] = useState(true);
 
     const [aspectRatio, setAspectRatio] = useState('auto');
@@ -3245,7 +3296,6 @@ const AIMagic = ({ onBack }: {onBack: () => void}) => {
         const instructionParts = [];
         if (doBeautify) instructionParts.push("Beautify the subject: smooth skin, remove acne and blemishes, but keep it looking natural.");
         if (doRestore) instructionParts.push("Restore the photo: improve clarity, fix scratches, correct color fading, and reduce noise.");
-        if (doUpscale) instructionParts.push("Upscale the image to a higher resolution, adding realistic details and textures.");
 
         const hasMagicToggles = instructionParts.length > 0;
         const hasPrompts = positivePrompt.trim() !== '' || negativePrompt.trim() !== '';
@@ -3346,14 +3396,6 @@ const AIMagic = ({ onBack }: {onBack: () => void}) => {
                             onChange={(e) => setDoRestore(e.target.checked)}
                             disabled={isLoading}
                         />
-                         <ToggleSwitch
-                            id="magic-upscale"
-                            label={t('magicUpscale')}
-                            description={t('magicUpscaleDesc')}
-                            checked={doUpscale}
-                            onChange={(e) => setDoUpscale(e.target.checked)}
-                            disabled={isLoading}
-                        />
                         <hr className="border-light-border dark:border-dark-border" />
                          <ToggleSwitch
                             id="magic-preserve"
@@ -3396,6 +3438,174 @@ const AIMagic = ({ onBack }: {onBack: () => void}) => {
                     )}
                     <button onClick={handleSubmit} disabled={isLoading} className="w-full btn-primary text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
                         <i className="fas fa-wand-magic-sparkles mr-2"></i> {isLoading ? t('generating') : t('generate')}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const UpscaleAI = ({ onBack }: {onBack: () => void}) => {
+    const { t, language } = useAppContext();
+    const { ai } = useApi();
+    const [sourceImage, setSourceImage] = useState<UploadedImage | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [resultImage, setResultImage] = useState<string | null>(null);
+    const [error, setError] = useState('');
+    const [positivePrompt, setPositivePrompt] = useState('');
+    const [negativePrompt, setNegativePrompt] = useState('');
+    const [upscaleLevel, setUpscaleLevel] = useState<'2x' | '4x' | '8x'>('4x');
+    const [skinStyle, setSkinStyle] = useState('High_Fidelity_Realism');
+    const [outputFormat, setOutputFormat] = useState<OutputFormat>('image/png');
+
+    const handleSubmit = async () => {
+        if (!ai) {
+            setError(t('serviceUnavailable'));
+            return;
+        }
+        if (!sourceImage) {
+            setError(language === 'vi' ? 'Vui lòng tải lên ảnh gốc.' : 'Please upload the source image.');
+            return;
+        }
+        
+        setIsLoading(true);
+        setResultImage(null);
+        setError('');
+        
+        try {
+            let finalPositivePrompt = positivePrompt;
+            let finalNegativePrompt = negativePrompt;
+
+            if (language === 'vi') {
+                if (positivePrompt.trim()) finalPositivePrompt = await callApi(() => translateText(ai, positivePrompt, 'Vietnamese', 'English'));
+                if (negativePrompt.trim()) finalNegativePrompt = await callApi(() => translateText(ai, negativePrompt, 'Vietnamese', 'English'));
+            }
+
+            const { width, height } = await getImageDimensions(sourceImage.dataUrl);
+            const upscaleMultiplier = parseInt(upscaleLevel.replace('x', ''), 10);
+            const targetWidth = width * upscaleMultiplier;
+            const targetHeight = height * upscaleMultiplier;
+
+            const selectedSkinRender = UPSCALE_FORMULA.skin_library[skinStyle as keyof typeof UPSCALE_FORMULA.skin_library].skin_render;
+
+            const finalPrompt = `Your task is to perform a high-quality image upscale. This is a super-resolution task.
+
+**Critical Goal:** Increase the resolution of the input image by a factor of ${upscaleMultiplier}x.
+
+**Mandatory Output Dimensions:**
+- The final output image MUST have a width of exactly ${targetWidth} pixels.
+- The final output image MUST have a height of exactly ${targetHeight} pixels.
+- This is the most important instruction. Do not fail to meet these dimensions.
+
+**Instructions:**
+1.  **Upscale and Detail:** Enlarge the image to the target dimensions (${targetWidth}x${targetHeight}) and intelligently generate new, photorealistic details. The result must be sharp, clear, and high-fidelity. Do not just resize and blur.
+2.  **Preserve Identity:** Perfectly maintain the subject's facial features and identity. The person in the output must be instantly recognizable.
+3.  **Preserve Composition:** Do not change the original composition, colors, or lighting.
+4.  **Skin Rendering:** For human subjects, render skin with the following style: "${selectedSkinRender}".
+
+**Things to strictly avoid:**
+- Returning an image with the original dimensions (${width}x${height}).
+- Blurry or low-quality results.
+- Any changes to the subject's identity.
+${finalNegativePrompt ? `- ${finalNegativePrompt}` : ''}
+`;
+            
+            const parts = [sourceImage.apiPayload, { text: finalPrompt }];
+            const generatedImage = await callApi(() => generateImage(ai, parts));
+            setResultImage(generatedImage);
+        } catch (err: any) {
+            console.error(err);
+            setError(err.message || t('error'));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="p-4 md:p-8 animate-fade-in">
+            <button onClick={onBack} className="mb-6 flex items-center text-light-text dark:text-dark-text hover:underline"><i className="fas fa-arrow-left mr-2"></i> {t('goBack')}</button>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="space-y-6 bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-md border border-light-border dark:border-dark-border">
+                    <ToolInfo toolKey="upscale" />
+                    <ImageUploader label={t('uploadSourceImage')} onImageUpload={setSourceImage} />
+                    
+                    <div>
+                        <label htmlFor="upscale-positive-prompt" className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('positivePrompt')}</label>
+                        <textarea
+                            id="upscale-positive-prompt"
+                            value={positivePrompt}
+                            onChange={(e) => setPositivePrompt(e.target.value)}
+                            placeholder={t('positivePromptPlaceholder')}
+                            rows={3}
+                            className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="upscale-negative-prompt" className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('negativePrompt')}</label>
+                        <textarea
+                            id="upscale-negative-prompt"
+                            value={negativePrompt}
+                            onChange={(e) => setNegativePrompt(e.target.value)}
+                            placeholder={t('negativePromptPlaceholder')}
+                            rows={3}
+                            className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('upscaleLevelLabel')}</label>
+                        <div className="flex space-x-2 rounded-lg p-1 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border">
+                            {(['2x', '4x', '8x'] as const).map((level) => (
+                                <button
+                                    key={level}
+                                    onClick={() => setUpscaleLevel(level)}
+                                    className={`w-full px-3 py-2 text-sm font-semibold rounded-md transition-colors duration-200 ${
+                                        upscaleLevel === level
+                                        ? 'btn-primary text-white'
+                                        : 'bg-transparent text-light-text dark:text-dark-text hover:bg-light-surface dark:hover:bg-dark-surface'
+                                    }`}
+                                >
+                                    {level.toUpperCase()}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('upscaleSkinStyleLabel')}</label>
+                        <select value={skinStyle} onChange={(e) => setSkinStyle(e.target.value)} className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text">
+                            {Object.keys(UPSCALE_FORMULA.skin_library).map(key => (
+                                <option key={key} value={key}>
+                                    {t(`skinStyle_${key}` as StringTranslationKeys)}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('outputFormat')}</label>
+                        <select value={outputFormat} onChange={(e) => setOutputFormat(e.target.value as OutputFormat)} className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text">
+                           <option value="image/png">PNG</option>
+                           <option value="image/jpeg">JPEG</option>
+                           <option value="image/webp">WEBP</option>
+                        </select>
+                    </div>
+                </div>
+                <div className="space-y-6">
+                    <div className="bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-md border border-light-border dark:border-dark-border">
+                         <h3 className="text-xl font-bold mb-4 text-light-text dark:text-dark-text">{t('result')}</h3>
+                         <div className="w-full h-96 bg-light-bg dark:bg-dark-bg rounded-lg flex items-center justify-center border border-light-border dark:border-dark-border">
+                             {isLoading ? <Spinner /> : resultImage && sourceImage ? <ImageComparator beforeSrc={sourceImage.dataUrl} afterSrc={resultImage} /> : <p className="text-gray-500">{t('preview')}</p>}
+                         </div>
+                         {error && <p className="text-red-500 mt-4 text-center">{error}</p>}
+                    </div>
+                    {resultImage && !isLoading && (
+                        <a href={resultImage} download={getDownloadFilename(resultImage)} className="w-full btn-primary text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center">
+                            <i className="fas fa-download mr-2"></i> {t('download')}
+                        </a>
+                    )}
+                    <button onClick={handleSubmit} disabled={isLoading} className="w-full btn-primary text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i className="fas fa-search-plus mr-2"></i> {isLoading ? t('generating') : t('generate')}
                     </button>
                 </div>
             </div>
@@ -3717,6 +3927,8 @@ const App = () => {
         return <AIVideoCreator onBack={() => setPage('home')} />;
       case 'magic':
         return <AIMagic onBack={() => setPage('home')} />;
+      case 'upscale':
+        return <UpscaleAI onBack={() => setPage('home')} />;
       case 'background':
         return <AIBackground onBack={() => setPage('home')} />;
       case 'trendko':
