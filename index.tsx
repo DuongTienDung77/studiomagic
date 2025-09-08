@@ -3486,28 +3486,57 @@ const UpscaleAI = ({ onBack }: {onBack: () => void}) => {
             const targetWidth = width * upscaleMultiplier;
             const targetHeight = height * upscaleMultiplier;
 
+            const pipelineConfig: {
+                pipeline_name: string;
+                preserve_face: boolean;
+                avoid_plastic_skin: boolean;
+                target_resolution: string;
+                cinematic_tone: boolean;
+                steps: { stage: number; scale: string; purpose: string }[];
+            } = {
+                pipeline_name: "MultiStageSuperResolution",
+                preserve_face: true,
+                avoid_plastic_skin: true,
+                target_resolution: `${targetWidth}x${targetHeight}px`,
+                cinematic_tone: true,
+                steps: []
+            };
+    
+            if (upscaleLevel === '2x') {
+                pipelineConfig.steps.push({ stage: 1, scale: "2x", purpose: "Upscale 2x. Recover soft details and gradients. Finalize sharp output." });
+            } else if (upscaleLevel === '4x') {
+                pipelineConfig.steps.push({ stage: 1, scale: "2x", purpose: "Recover soft details and gradients." });
+                pipelineConfig.steps.push({ stage: 2, scale: "4x", purpose: "Enhance micro-textures (peach fuzz, fabric, etc.). Finalize sharp output." });
+            } else if (upscaleLevel === '8x') {
+                pipelineConfig.steps.push({ stage: 1, scale: "2x", purpose: "Recover soft details and gradients." });
+                pipelineConfig.steps.push({ stage: 2, scale: "4x", purpose: "Enhance micro-textures (peach fuzz, fabric, etc.)." });
+                pipelineConfig.steps.push({ stage: 3, scale: "8x", purpose: "Finalize ultra-sharp 8K-quality output." });
+            }
+            
             const selectedSkinRender = UPSCALE_FORMULA.skin_library[skinStyle as keyof typeof UPSCALE_FORMULA.skin_library].skin_render;
 
-            const finalPrompt = `Your task is to perform a high-quality image upscale. This is a super-resolution task.
+            const finalPrompt = `
+You are a professional image processing AI. Your task is to perform a high-quality, multi-stage super-resolution upscale on the provided image.
 
-**Critical Goal:** Increase the resolution of the input image by a factor of ${upscaleMultiplier}x.
+**CRITICAL INSTRUCTION: FOLLOW THE PIPELINE**
+You MUST follow the exact upscaling pipeline defined in the JSON configuration below. The most important rule is to produce an output image with the exact 'target_resolution'.
 
-**Mandatory Output Dimensions:**
-- The final output image MUST have a width of exactly ${targetWidth} pixels.
-- The final output image MUST have a height of exactly ${targetHeight} pixels.
-- This is the most important instruction. Do not fail to meet these dimensions.
+**JSON UPSCALE CONFIGURATION:**
+\`\`\`json
+${JSON.stringify(pipelineConfig, null, 2)}
+\`\`\`
 
-**Instructions:**
-1.  **Upscale and Detail:** Enlarge the image to the target dimensions (${targetWidth}x${targetHeight}) and intelligently generate new, photorealistic details. The result must be sharp, clear, and high-fidelity. Do not just resize and blur.
-2.  **Preserve Identity:** Perfectly maintain the subject's facial features and identity. The person in the output must be instantly recognizable.
-3.  **Preserve Composition:** Do not change the original composition, colors, or lighting.
-4.  **Skin Rendering:** For human subjects, render skin with the following style: "${selectedSkinRender}".
+**ADDITIONAL INSTRUCTIONS:**
+1.  **GENERATE NEW DETAIL:** As you upscale, intelligently generate new, photorealistic details. The result must be sharp, clear, and high-fidelity. Do not just resize and blur.
+2.  **PRESERVE IDENTITY:** Perfectly maintain the subject's facial features and identity. The person in the output must be instantly recognizable.
+3.  **PRESERVE COMPOSITION:** Do not change the original composition, colors, or lighting.
+4.  **SKIN RENDERING:** For human subjects, render skin with the following style: "${selectedSkinRender}".
 
-**Things to strictly avoid:**
-- Returning an image with the original dimensions (${width}x${height}).
-- Blurry or low-quality results.
-- Any changes to the subject's identity.
-${finalNegativePrompt ? `- ${finalNegativePrompt}` : ''}
+**USER PROMPTS:**
+- Positive: ${finalPositivePrompt || 'None'}
+- Negative (things to avoid): Returning an image with the original dimensions. Blurry results. Changes to subject's identity. ${finalNegativePrompt || ''}
+
+Execute the pipeline and return only the final, upscaled image.
 `;
             
             const parts = [sourceImage.apiPayload, { text: finalPrompt }];
