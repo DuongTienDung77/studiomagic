@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login</title>
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
+  <script src="js/supabase-init.js"></script>
+</head>
+<body>
+  <h2>Đăng nhập bằng Email</h2>
+  <input type="email" id="email" placeholder="Nhập email..." />
+  <button onclick="sendOtp()">Gửi OTP</button>
+  <p id="status"></p>
+
+  <script>
+    async function sendOtp() {
+      const email = document.getElementById('email').value;
+      const { error } = await window.supabaseClient.auth.signInWithOtp({ email, options: { emailRedirectTo: window.REDIRECT_URL }});
+      document.getElementById('status').innerText = error ? error.message : "Đã gửi email xác thực!";
+    }
+  </script>
+</body>
+</html>
