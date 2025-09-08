@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Xác thực OTP</title>
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
+  <script src="js/supabase-init.js"></script>
+</head>
+<body>
+  <h2>Nhập OTP 6 số</h2>
+  <input type="email" id="email" placeholder="Email" />
+  <input type="text" id="otp" placeholder="Mã OTP" />
+  <button onclick="verifyOtp()">Xác nhận</button>
+  <p id="status"></p>
+
+  <script>
+    async function verifyOtp() {
+      const email = document.getElementById('email').value;
+      const token = document.getElementById('otp').value;
+      const { error, data } = await window.supabaseClient.auth.verifyOtp({ email, token, type: 'email' });
+      document.getElementById('status').innerText = error ? error.message : "Đăng nhập thành công!";
+    }
+  </script>
+</body>
+</html>
