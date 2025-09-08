@@ -672,6 +672,12 @@ const TRANSLATIONS = {
     batchCharacter: 'Character',
     batchBackground: 'Background',
     batchStyle: 'Style',
+    // Secret Code Screen
+    enterSecretCode: 'Enter Secret Code',
+    privacyProtection: 'This is for privacy protection once the app is on a public domain.',
+    secretCodePlaceholder: 'Secret code...',
+    unlock: 'Unlock',
+    wrongCodeError: 'Incorrect code. Please contact: 0917.939.111 to get the secret code.',
   },
   vi: {
     // General
@@ -882,6 +888,12 @@ const TRANSLATIONS = {
     batchCharacter: 'Nhân vật',
     batchBackground: 'Bối cảnh',
     batchStyle: 'Phong cách',
+    // Secret Code Screen
+    enterSecretCode: 'Nhập Mã Bí Mật',
+    privacyProtection: 'Mã này dùng để bảo vệ quyền riêng tư khi ứng dụng được phát hành.',
+    secretCodePlaceholder: 'Mã bí mật...',
+    unlock: 'Mở khóa',
+    wrongCodeError: 'Mã không đúng. Vui lòng liên hệ: 0917.939.111 để lấy mã bí mật.',
   },
 };
 
@@ -3890,6 +3902,53 @@ const WhiskAutoStudio = ({ onBack }: { onBack: () => void }) => {
     );
 }
 
+const SecretCodeScreen = ({ onSuccess }: { onSuccess: () => void }) => {
+    const { t } = useAppContext();
+    const [code, setCode] = useState('');
+    const [error, setError] = useState('');
+    const secretCode = '778812';
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (code === secretCode) {
+            onSuccess();
+        } else {
+            setError(t('wrongCodeError'));
+        }
+    };
+
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-light-bg dark:bg-dark-bg p-4">
+            <div className="w-full max-w-sm mx-auto bg-light-surface dark:bg-dark-surface p-8 rounded-2xl shadow-lg border border-light-border dark:border-dark-border animate-fade-in">
+                <div className="text-center mb-6">
+                    <h2 className="text-2xl font-bold text-light-text dark:text-dark-text">{t('enterSecretCode')}</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t('privacyProtection')}</p>
+                </div>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                        <input
+                            type="password"
+                            value={code}
+                            onChange={(e) => setCode(e.target.value)}
+                            placeholder={t('secretCodePlaceholder')}
+                            className="w-full p-3 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text text-center tracking-widest text-lg"
+                            aria-label={t('secretCodePlaceholder')}
+                        />
+                    </div>
+                    {error && (
+                        <p className="text-red-500 text-sm text-center">{error}</p>
+                    )}
+                    <div>
+                        <button type="submit" className="w-full btn-primary text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center">
+                            <i className="fas fa-lock mr-2"></i> {t('unlock')}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
 const Footer = () => {
   return (
     <footer className="bg-light-surface dark:bg-dark-surface p-4 text-center border-t border-light-border dark:border-dark-border">
@@ -3906,10 +3965,16 @@ const App = () => {
   const [page, setPage] = useState<Page>('home');
   const [theme, setTheme] = useState<Theme>('dark');
   const [language, setLanguage] = useState<Language>('vi');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme') || 'dark';
     setTheme(storedTheme as Theme);
+    
+    const savedAuth = localStorage.getItem('app_authenticated');
+    if (savedAuth === 'true') {
+      setIsAuthenticated(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -3925,6 +3990,11 @@ const App = () => {
     }) as IAppContext['t'],
     [language]
   );
+  
+  const handleAuthenticationSuccess = () => {
+    localStorage.setItem('app_authenticated', 'true');
+    setIsAuthenticated(true);
+  };
 
   const handleNavigate = (newPage: Page) => {
       setPage(newPage);
@@ -3973,6 +4043,14 @@ const App = () => {
         return <HomePage onNavigate={handleNavigate} />;
     }
   };
+  
+  if (!isAuthenticated) {
+    return (
+      <AppContext.Provider value={contextValue}>
+        <SecretCodeScreen onSuccess={handleAuthenticationSuccess} />
+      </AppContext.Provider>
+    );
+  }
 
   return (
     <AppContext.Provider value={contextValue}>
