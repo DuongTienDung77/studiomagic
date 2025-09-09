@@ -564,8 +564,12 @@ const TRANSLATIONS = {
     lookbookContentPlaceholder: 'E.g., Title 1 // Body content for page 1...\nTitle 2 // Body content for page 2...',
     errorNotEnoughImages: 'Please upload at least 2 images to create a lookbook.',
     // Default Prompts
-    stylistPositiveDefault: 'hyper-realistic, detailed, 8k',
-    stylistNegativeDefault: 'blurry, distorted, malformed, deformed',
+    stylistPositiveDefault: 'hyper-realistic, detailed, 8k, professional photography',
+    stylistNegativeDefault: 'blurry, distorted, malformed, deformed, different person, ugly',
+    stylistCharacter: 'Main Character Image',
+    stylistAccessories: 'Outfit & Accessories (optional)',
+    stylistSceneDescription: 'Scene Description (optional)',
+    stylistSceneDescriptionPlaceholder: 'e.g., standing on a street in Paris...',
     autoPreset: 'Auto (from model image)',
     propFusionPositiveDefault: 'hyper-realistic, detailed, 8k, seamless integration',
     propFusionNegativeDefault: 'blurry, distorted, floating, discolored, malformed, deformed',
@@ -780,8 +784,12 @@ const TRANSLATIONS = {
     lookbookContentPlaceholder: 'VD: Tiêu đề 1 // Nội dung cho trang 1...\nTiêu đề 2 // Nội dung cho trang 2...',
     errorNotEnoughImages: 'Vui lòng tải lên ít nhất 2 ảnh để tạo lookbook.',
     // Default Prompts
-    stylistPositiveDefault: 'siêu thực, chi tiết, 8k',
-    stylistNegativeDefault: 'mờ, méo mó, dị dạng, biến dạng',
+    stylistPositiveDefault: 'siêu thực, chi tiết, 8k, nhiếp ảnh chuyên nghiệp',
+    stylistNegativeDefault: 'mờ, méo mó, dị dạng, biến dạng, người khác, xấu xí',
+    stylistCharacter: 'Ảnh Nhân Vật Chính',
+    stylistAccessories: 'Ảnh Trang Phục & Phụ Kiện (tùy chọn)',
+    stylistSceneDescription: 'Mô tả bối cảnh (tùy chọn)',
+    stylistSceneDescriptionPlaceholder: 'VD: đang đứng ở đường phố Paris...',
     autoPreset: 'Tự động (theo ảnh mẫu)',
     propFusionPositiveDefault: 'siêu thực, chi tiết, 8k, tích hợp liền mạch',
     propFusionNegativeDefault: 'mờ, méo mó, lơ lửng, bạc màu, dị dạng, biến dạng',
@@ -2173,13 +2181,10 @@ const AIStylist = ({ onBack }: {onBack: () => void}) => {
     const { t, language, incrementGenerationCount } = useAppContext();
     const { ai } = useApi();
     const [modelImage, setModelImage] = useState<UploadedImage | null>(null);
-    const [outfitImage, setOutfitImage] = useState<UploadedImage | null>(null);
+    const [accessoryImages, setAccessoryImages] = useState<UploadedImage[]>([]);
+    const [sceneDescription, setSceneDescription] = useState('');
     const [positivePrompt, setPositivePrompt] = useState(() => t('stylistPositiveDefault'));
     const [negativePrompt, setNegativePrompt] = useState(() => t('stylistNegativeDefault'));
-    const [preset, setPreset] = useState('auto-preset');
-    const [aspectRatio, setAspectRatio] = useState('auto');
-    const [outputFormat, setOutputFormat] = useState<OutputFormat>('image/jpeg');
-    const [beauty, setBeauty] = useState<'on'|'off'>('on');
     const [isLoading, setIsLoading] = useState(false);
     const [resultImage, setResultImage] = useState<string | null>(null);
     const [error, setError] = useState('');
@@ -2200,24 +2205,18 @@ const AIStylist = ({ onBack }: {onBack: () => void}) => {
             prevLangRef.current = language;
         }
     }, [language, t]);
-
-    useEffect(() => {
-        if (preset !== 'auto-preset') {
-            setBeauty(PRESETS[preset].beauty);
-        } else {
-            setBeauty('on');
-        }
-    }, [preset]);
-
-    const isBeautyAvailable = useMemo(() => preset === 'auto-preset' || PRESETS[preset]?.beauty === 'on', [preset]);
     
     const handleSubmit = async () => {
         if (!ai) {
             setError(t('serviceUnavailable'));
             return;
         }
-        if (!modelImage || !outfitImage) {
-            setError(language === 'vi' ? 'Vui lòng tải lên ảnh người mẫu và trang phục.' : 'Please upload both model and outfit images.');
+        if (!modelImage) {
+            setError(language === 'vi' ? 'Vui lòng tải lên Ảnh Nhân Vật Chính.' : 'Please upload the Main Character Image.');
+            return;
+        }
+        if (accessoryImages.length === 0 && !sceneDescription.trim()) {
+            setError(language === 'vi' ? 'Vui lòng tải lên ít nhất một trang phục hoặc mô tả bối cảnh.' : 'Please upload at least one accessory or describe a scene.');
             return;
         }
         setIsLoading(true);
@@ -2226,76 +2225,51 @@ const AIStylist = ({ onBack }: {onBack: () => void}) => {
         try {
             let finalPositivePrompt = positivePrompt;
             let finalNegativePrompt = negativePrompt;
+            let finalSceneDescription = sceneDescription;
 
             if (language === 'vi') {
                 if (positivePrompt.trim()) finalPositivePrompt = await callApi(() => translateText(ai, positivePrompt, 'Vietnamese', 'English'));
                 if (negativePrompt.trim()) finalNegativePrompt = await callApi(() => translateText(ai, negativePrompt, 'Vietnamese', 'English'));
+                if (sceneDescription.trim()) finalSceneDescription = await callApi(() => translateText(ai, sceneDescription, 'Vietnamese', 'English'));
             }
 
-            let finalAspectRatio = aspectRatio;
-            if (aspectRatio === 'auto') {
-                if (modelImage?.dataUrl) {
-                    try {
-                        const { width, height } = await getImageDimensions(modelImage.dataUrl);
-                        const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
-                        const divisor = gcd(width, height);
-                        finalAspectRatio = `${width / divisor}:${height / divisor}`;
-                    } catch (e) {
-                        console.error("Could not determine image aspect ratio, falling back.", e);
-                        finalAspectRatio = (preset !== 'auto-preset' && PRESETS[preset].aspect) || '1:1';
-                    }
-                } else {
-                    finalAspectRatio = (preset !== 'auto-preset' && PRESETS[preset].aspect) || '1:1';
-                }
-            }
-
-            const imageToSend = await resizeImageToAspectRatio(modelImage, finalAspectRatio);
-            
-            let presetDirective;
-            let userPromptInstruction;
-
-            if (preset === 'auto-preset') {
-                const quality = `[QUALITY] ${PRESET_CONTROLLER.quality_block}`;
-                const global = `[GLOBAL] aspect=${finalAspectRatio}; pipeline=${PRESET_CONTROLLER.global_defaults.color_pipeline}; noise_floor=${PRESET_CONTROLLER.global_defaults.noise_floor}.`;
-                const instruction = `[INSTRUCTION] Your primary goal is to EXACTLY replicate the photographic style, lighting, camera properties, and mood of the first input image. ${PRESET_CONTROLLER.generation_instruction}`;
-                presetDirective = `${quality}\n\n${global}\n${instruction}`;
-                
-                userPromptInstruction = `
-                    instruction: This is a virtual try-on task. The goal is to replace the clothing on the person in the first image (the model) with the outfit from the second image.
-
-                    **ABSOLUTE CRITICAL INSTRUCTIONS:**
-                    1.  **EXACTLY REPLICATE STYLE:** This is the most important rule. You must perfectly match the photographic style, lighting, mood, colors, and camera properties of the first input image.
-                    2.  **STRICTLY PRESERVE COMPOSITION & IDENTITY:** The output image's framing, camera angle, zoom level, crop, and the person's pose, face, hair, and body MUST be an EXACT replica of the first input image.
-                    3.  **DO NOT CHANGE THE SCENE:** Do not create a new background or change the existing one. If the input image was padded to fit the aspect ratio, the output must have identical padding.
-                    4.  **SWAP OUTFIT ONLY:** Your ONLY task is to realistically place the new outfit onto the model.
-                `;
-            } else {
-                presetDirective = buildPresetDirective(preset, { beauty, aspect: finalAspectRatio });
-                userPromptInstruction = `
-                    instruction: This is a virtual try-on task. The goal is to replace the clothing on the person in the first image (the model) with the outfit from the second image.
-
-                    **ABSOLUTE CRITICAL INSTRUCTIONS:**
-                    1.  **STRICTLY PRESERVE COMPOSITION & IDENTITY:** This is the most important rule. The output image's framing, camera angle, zoom level, crop, and the person's pose, face, hair, and body MUST be an EXACT replica of the first input image.
-                    2.  **DO NOT CHANGE THE SCENE:** Do not create a new background or change the existing one. If the input image was padded to fit the aspect ratio, the output must have identical padding.
-                    3.  **SWAP OUTFIT ONLY:** Your ONLY task is to realistically place the new outfit onto the model.
-
-                    **Regarding the preset:** Use the preset's 'style', 'lighting', and 'mood' to influence the final aesthetic. HOWEVER, you MUST IGNORE any part of the preset that contradicts the critical instructions above (e.g., ignore 'full-body shots' if the input is a close-up). The original composition is absolute.
-                `;
-            }
+            const { width, height } = await getImageDimensions(modelImage.dataUrl);
+            const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+            const divisor = gcd(width, height);
+            const aspectRatio = `${width / divisor}:${height / divisor}`;
             
             const finalPrompt = `
-                ${presetDirective}\n\n
-                [USER_PROMPT]
-                ${userPromptInstruction}
-                
-                Positive: ${finalPositivePrompt}
-                Negative: ${finalNegativePrompt}
-                Output-Format: ${outputFormat.split('/')[1]}
+                [TASK] This is an advanced virtual try-on and scene composition task. Your goal is to dress the main subject with the provided accessories and place them in the described scene.
+
+                [IDENTITY PRESERVATION]
+                **CRITICAL INSTRUCTION: ABSOLUTE LIKENESS REQUIRED**
+                You MUST strictly preserve the facial features, structure, and identity of the subject from the first input image. The person in the output MUST be perfectly and instantly recognizable as the same person.
+                - DO NOT change their face.
+                - DO NOT generate a different person.
+                - PRESERVE original pose, body shape, hair, and skin tone.
+
+                [INPUTS]
+                - The **first image** is the [MAIN SUBJECT].
+                - All **subsequent images** are [ACCESSORIES] (clothing, jewelry, items, etc.).
+
+                [INSTRUCTIONS]
+                1.  **Dress the Subject:** Realistically place all [ACCESSORIES] onto the [MAIN SUBJECT]. The clothes should fit naturally, with correct draping, shadows, and lighting.
+                2.  **Compose the Scene:** Place the fully dressed subject into the environment described in [SCENE DESCRIPTION]. If no scene is described, create a simple, neutral studio background that complements the outfit.
+                3.  **Maintain Consistency:** The final image's lighting, photographic style, and quality should be cohesive and hyper-realistic. The aspect ratio must be ${aspectRatio}.
+
+                [SCENE DESCRIPTION]
+                ${finalSceneDescription || 'A clean, minimalist studio background.'}
+
+                [USER HINTS]
+                - Positive: ${finalPositivePrompt}
+                - Negative (AVOID): ${finalNegativePrompt}
+
+                [OUTPUT] Generate a single, high-quality image adhering to all instructions.
             `;
 
             const parts = [
-                imageToSend.apiPayload,
-                outfitImage.apiPayload,
+                modelImage.apiPayload,
+                ...accessoryImages.map(img => img.apiPayload),
                 { text: finalPrompt },
             ];
             const generatedImage = await callApi(() => generateImage(ai, parts));
@@ -2316,52 +2290,20 @@ const AIStylist = ({ onBack }: {onBack: () => void}) => {
             </button>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="space-y-6 bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-md border border-light-border dark:border-dark-border">
-                    <ToolInfo toolKey="stylist" />
-                    <ImageUploader label={t('uploadModel')} onImageUpload={setModelImage} />
-                    <ImageUploader label={t('uploadOutfit')} onImageUpload={setOutfitImage} />
+                    <h2 className="text-2xl font-bold text-center">{t('stylistStudioTitle')}</h2>
+                    <ImageUploader label={t('stylistCharacter')} onImageUpload={setModelImage} />
+                    <MultiImageUploader label={t('stylistAccessories')} onImagesUpload={setAccessoryImages} />
                     
                     <div>
-                        <label className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('preset')}</label>
-                        <select value={preset} onChange={(e) => setPreset(e.target.value)} className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text">
-                            <option value="auto-preset">{t('autoPreset')}</option>
-                            {Object.entries(PRESETS).map(([key, value]) => (
-                                <option key={key} value={key}>{value.label[language as Language]}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                     <div>
-                        <label className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('aspectRatio')}</label>
-                        <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)} className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text">
-                           {ASPECT_RATIOS.map(ratio => (<option key={ratio.value} value={ratio.value}>{ratio.label[language as Language]}</option>))}
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('outputFormat')}</label>
-                        <select value={outputFormat} onChange={(e) => setOutputFormat(e.target.value as OutputFormat)} className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text">
-                           <option value="image/jpeg">JPEG</option>
-                           <option value="image/png">PNG</option>
-                           <option value="image/webp">WEBP</option>
-                        </select>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                        <label htmlFor="beautify-toggle-stylist" className="block text-sm font-bold text-light-text dark:text-dark-text">
-                            {t('beautify')}
-                            {!isBeautyAvailable && <span className="text-xs font-normal text-gray-500 ml-2">{t('beautifyHint')}</span>}
-                        </label>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input 
-                                type="checkbox" 
-                                id="beautify-toggle-stylist"
-                                checked={beauty === 'on'} 
-                                onChange={(e) => setBeauty(e.target.checked ? 'on' : 'off')} 
-                                className="sr-only peer" 
-                                disabled={!isBeautyAvailable}
-                            />
-                            <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-light-primary/50 dark:peer-focus:ring-dark-primary/50 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-light-primary dark:peer-checked:bg-dark-primary"></div>
-                        </label>
+                      <label htmlFor="scene-description" className="block text-sm font-bold mb-2 text-light-text dark:text-dark-text">{t('stylistSceneDescription')}</label>
+                      <textarea
+                          id="scene-description"
+                          value={sceneDescription}
+                          onChange={(e) => setSceneDescription(e.target.value)}
+                          placeholder={t('stylistSceneDescriptionPlaceholder')}
+                          rows={3}
+                          className="w-full p-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md text-light-text dark:text-dark-text"
+                      />
                     </div>
 
                     <div>
@@ -2390,7 +2332,7 @@ const AIStylist = ({ onBack }: {onBack: () => void}) => {
                 <div className="space-y-6">
                     <div className="bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-md border border-light-border dark:border-dark-border">
                          <h3 className="text-xl font-bold mb-4 text-light-text dark:text-dark-text">{t('result')}</h3>
-                         <div className="w-full h-96 bg-light-bg dark:bg-dark-bg rounded-lg flex items-center justify-center border border-light-border dark:border-dark-border">
+                         <div className="w-full min-h-96 bg-light-bg dark:bg-dark-bg rounded-lg flex items-center justify-center border border-light-border dark:border-dark-border">
                             {isLoading ? (
                                 <Spinner />
                             ) : resultImage ? (
