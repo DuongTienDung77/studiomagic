@@ -17,7 +17,7 @@ import {createRoot} from 'react-dom/client';
 import {GoogleGenAI, Modality} from '@google/genai';
 
 // --- CONSTANTS & TYPES ---
-type Page = 'home' | 'pose' | 'prop' | 'design' | 'creative' | 'stylist' | 'architect' | 'video' | 'magic' | 'background' | 'trendko' | 'batch' | 'lookbook' | 'placement' | 'upscale';
+type Page = 'home' | 'pose' | 'prop' | 'design' | 'creative' | 'stylist' | 'architect' | 'video' | 'magic' | 'background' | 'trendko' | 'batch' | 'lookbook' | 'placement' | 'upscale' | 'comic';
 type Theme = 'light' | 'dark';
 type Language = 'en' | 'vi';
 type ControlMode = 'Pose' | 'Edge' | 'Depth' | 'Creative';
@@ -514,6 +514,8 @@ const TRANSLATIONS = {
     lookbookStudioDesc: 'Create professional lookbook pages from your photos.',
     productPlacementTitle: 'AI Product Placement',
     productPlacementDesc: 'Place your product into any scene realistically.',
+    comicStudioTitle: 'AI Comic Style',
+    comicStudioDesc: 'Transform your photos into various comic book styles.',
     // Tool Page
     uploadCharacter: 'Upload Character',
     uploadPose: 'Upload Pose Sketch',
@@ -734,6 +736,8 @@ const TRANSLATIONS = {
     lookbookStudioDesc: 'Tạo các trang lookbook chuyên nghiệp từ ảnh của bạn.',
     productPlacementTitle: 'Thương mại AI',
     productPlacementDesc: 'Đặt sản phẩm của bạn vào bất kỳ bối cảnh nào một cách chân thực.',
+    comicStudioTitle: 'AI Phong cách Comic',
+    comicStudioDesc: 'Biến ảnh của bạn thành nhiều phong cách truyện tranh khác nhau.',
     // Tool Page
     uploadCharacter: 'Tải lên Nhân vật',
     uploadPose: 'Tải lên Phác thảo Tư thế',
@@ -1547,6 +1551,7 @@ const HomePage = ({ onNavigate }: {onNavigate: (page: Page) => void}) => {
     { page: 'prop', icon: 'fa-magic', title: t('propFusionTitle'), desc: t('propFusionDesc') },
     { page: 'placement', icon: 'fa-bullhorn', title: t('productPlacementTitle'), desc: t('productPlacementDesc') },
     { page: 'design', icon: 'fa-palette', title: t('designStudioTitle'), desc: t('designStudioDesc') },
+    { page: 'comic', icon: 'fa-mask', title: t('comicStudioTitle'), desc: t('comicStudioDesc') },
     { page: 'creative', icon: 'fa-lightbulb', title: t('creativeStudioTitle'), desc: t('creativeStudioDesc') },
     { page: 'stylist', icon: 'fa-tshirt', title: t('stylistStudioTitle'), desc: t('stylistStudioDesc') },
     { page: 'architect', icon: 'fa-drafting-compass', title: t('architectStudioTitle'), desc: t('architectStudioDesc') },
@@ -3707,6 +3712,125 @@ const AIBackground = ({ onBack }: {onBack: () => void}) => {
     );
 };
 
+const AIComicStyle = ({ onBack }: { onBack: () => void }) => {
+    const { t, language, incrementGenerationCount } = useAppContext();
+    const { ai } = useApi();
+    const [sourceImage, setSourceImage] = useState<UploadedImage | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [results, setResults] = useState<{ style: string, imageUrl: string }[]>([]);
+    const [error, setError] = useState('');
+
+    const comicStyles = {
+        'Marvel': 'A dynamic, high-contrast comic book style reminiscent of modern Marvel comics. Use bold inks, dramatic lighting, and a cinematic feel.',
+        'Anime': 'A vibrant, clean 90s anime style. Use bright colors, cel shading, distinct line art, and expressive, large eyes.',
+        'Disney': 'A soft, friendly, and painterly style similar to modern Disney animated films. Use smooth gradients, warm lighting, and a gentle, storybook quality.',
+        'Manga': 'A classic black and white manga style. Use screentones for shading, dynamic paneling effects, and expressive ink work. Focus on dramatic lines and emotional depth.',
+    };
+
+    const handleSubmit = async () => {
+        if (!ai) {
+            setError(t('serviceUnavailable'));
+            return;
+        }
+        if (!sourceImage) {
+            setError(language === 'vi' ? 'Vui lòng tải lên một hình ảnh.' : 'Please upload an image.');
+            return;
+        }
+
+        setIsLoading(true);
+        setResults([]);
+        setError('');
+
+        try {
+            const generationPromises = Object.entries(comicStyles).map(async ([styleName, stylePrompt]) => {
+                const finalPrompt = `
+                    [TASK] Transform the user's photo into a comic book art style.
+
+                    [IDENTITY PRESERVATION]
+                    **CRITICAL INSTRUCTION: ABSOLUTE LIKENESS REQUIRED**
+                    You MUST strictly preserve the core facial features and identity of the person in the photo. The character in the output must be perfectly recognizable as the same person, just rendered in the new art style. Do NOT create a different person.
+
+                    [STYLE INSTRUCTION]
+                    Render the image in the following style: **${styleName}**.
+                    - **Details:** ${stylePrompt}
+                    - The final image should be a high-quality, artistic illustration.
+
+                    [OUTPUT] Generate a single image based on these instructions.
+                `;
+                const parts = [sourceImage.apiPayload, { text: finalPrompt }];
+                const imageUrl = await callApi(() => generateImage(ai, parts));
+                incrementGenerationCount();
+                return { style: styleName, imageUrl };
+            });
+
+            const settledResults = await Promise.allSettled(generationPromises);
+            
+            const successfulResults = settledResults
+                .filter(res => res.status === 'fulfilled')
+                .map(res => (res as PromiseFulfilledResult<{ style: string, imageUrl: string }>).value);
+            
+            setResults(successfulResults);
+            
+            const failedCount = settledResults.filter(res => res.status === 'rejected').length;
+            if (failedCount > 0) {
+                setError(`${failedCount} style(s) failed to generate.`);
+            }
+
+        } catch (err: any) {
+            console.error(err);
+            setError(err.message || t('error'));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="p-4 md:p-8 animate-fade-in">
+            <button onClick={onBack} className="mb-6 flex items-center text-light-text dark:text-dark-text hover:underline"><i className="fas fa-arrow-left mr-2"></i> {t('goBack')}</button>
+            <div className="max-w-6xl mx-auto">
+                <div className="text-center mb-8">
+                    <h2 className="text-4xl md:text-5xl font-extrabold mb-2 bg-gradient-to-r from-red-500 via-yellow-500 to-orange-500 bg-clip-text text-transparent">
+                        {t('comicStudioTitle')}
+                    </h2>
+                    <p className="text-lg text-gray-500 dark:text-gray-300">{t('comicStudioDesc')}</p>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-1 space-y-6 bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-md border border-light-border dark:border-dark-border">
+                        <ImageUploader label={t('uploadImage')} onImageUpload={setSourceImage} />
+                        <button onClick={handleSubmit} disabled={isLoading || !sourceImage} className="w-full btn-primary text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i className="fas fa-paint-brush mr-2"></i> {isLoading ? t('generating') : t('generate')}
+                        </button>
+                    </div>
+
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="bg-light-surface dark:bg-dark-surface p-6 rounded-lg shadow-md border border-light-border dark:border-dark-border min-h-[400px]">
+                            <h3 className="text-xl font-bold mb-4 text-light-text dark:text-dark-text text-center">{t('result')}</h3>
+                            {isLoading && <Spinner />}
+                            {error && <p className="text-red-500 mt-4 text-center">{error}</p>}
+                            {!isLoading && results.length > 0 && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {results.map(res => (
+                                        <div key={res.style} className="bg-light-bg dark:bg-dark-bg p-3 rounded-lg border border-light-border dark:border-dark-border">
+                                            <h4 className="font-bold text-center mb-2">{res.style}</h4>
+                                            <img src={res.imageUrl} alt={res.style} className="w-full h-auto rounded-md shadow-sm" />
+                                            <a href={res.imageUrl} download={`comic-style-${res.style}.png`} className="w-full mt-2 btn-secondary text-white text-xs font-bold py-2 px-3 rounded-lg flex items-center justify-center">
+                                                <i className="fas fa-download mr-2"></i> {t('download')}
+                                            </a>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {!isLoading && results.length === 0 && <p className="text-gray-500 text-center">{t('preview')}</p>}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 // --- NEW BATCH TOOL: Whisk Auto Studio ---
 type BatchResult = {
     prompt: string;
@@ -4028,6 +4152,8 @@ const App = () => {
         return <LookbookStudio onBack={() => setPage('home')} />;
       case 'placement':
         return <ProductPlacement onBack={() => setPage('home')} />;
+      case 'comic':
+        return <AIComicStyle onBack={() => setPage('home')} />;
       case 'home':
       default:
         return <HomePage onNavigate={handleNavigate} />;
